@@ -1,20 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "./config";
+
 /**
  * 매 요청마다 세션을 갱신하고, 관리자 콘솔(/admin, /)을 게이트한다.
  *  - 비로그인 → /login
  *  - 로그인했지만 admins 아님 → /login?denied=1  (로그인 화면에서 서버액션이 최종 판정도 함)
  */
 export async function updateSession(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  // env 미설정(첫 배포 등) — 게이트를 걸 수 없으니 통과시킨다. 로그인 화면에서 안내.
-  if (!supabaseUrl || !supabaseKey) return NextResponse.next({ request });
-
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+  const supabase = createServerClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
