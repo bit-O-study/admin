@@ -7,6 +7,36 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * (통합 콘솔은 헬스 Supabase 로 로그인하므로 admin_* RPC 의 is_admin() 게이트를 통과.
  *  service_role 이 아니라 세션이어야 JWT 이메일이 admins 에 매칭됨.)
  */
+export type AdminRow = { email: string; createdAt: string };
+
+/** 전체 관리자 목록. */
+export async function getAdmins(): Promise<AdminRow[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("admins")
+    .select("email, created_at")
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return (data as { email: string; created_at: string }[]).map((r) => ({
+    email: r.email,
+    createdAt: r.created_at,
+  }));
+}
+
+/** 게시물 관리자 목록. */
+export async function getPostModerators(): Promise<AdminRow[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("post_moderators")
+    .select("email, created_at")
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return (data as { email: string; created_at: string }[]).map((r) => ({
+    email: r.email,
+    createdAt: r.created_at,
+  }));
+}
+
 export type MemberRow = {
   userId: string;
   email: string | null;
