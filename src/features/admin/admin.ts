@@ -20,3 +20,16 @@ export const isAdminUser = cache(async (): Promise<boolean> => {
   if (error) return false;
   return (data?.length ?? 0) > 0;
 });
+
+/**
+ * 게시물 관리자(모더레이터)인지 — is_post_moderator() RPC.
+ * (관리자는 모두 모더레이터. 헬스 신고관리 게이트에 사용.)
+ */
+export const isPostModerator = cache(async (): Promise<boolean> => {
+  const user = await getCurrentUser();
+  if (!user) return false;
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("is_post_moderator");
+  if (error) return false;
+  return data === true;
+});
