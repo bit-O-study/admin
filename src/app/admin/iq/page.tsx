@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   getIqGradeDistribution,
   getIqRecentResults,
@@ -17,9 +18,17 @@ export default async function IqAdminPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
-      <header className="mb-6">
-        <h1 className="text-xl font-bold">🧠 아이큐</h1>
-        <p className="mt-1 text-sm text-zinc-500">응시·방문 통계</p>
+      <header className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold">🧠 아이큐</h1>
+          <p className="mt-1 text-sm text-zinc-500">응시·방문 통계</p>
+        </div>
+        <Link
+          href="/admin/iq/questions"
+          className="shrink-0 rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          문제 해설 →
+        </Link>
       </header>
 
       {/* 지표 카드 */}
