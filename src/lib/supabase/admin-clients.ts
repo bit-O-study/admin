@@ -37,8 +37,20 @@ const CONFIG: Record<SiteKey, { url?: string; key?: string }> = {
 
 const clientCache = new Map<SiteKey, SupabaseClient>();
 
-/** 해당 사이트의 service_role 키가 .env 에 설정돼 있는지. */
+/**
+ * 로그인한 관리자 **세션**(헬스 Supabase)으로 동작하는 사이트 — 별도 service_role
+ * env 가 필요 없다. 헬스·아이큐는 admin_* / iq_* RPC 를 세션으로 호출하므로 항상
+ * 연결된 것으로 본다. liquor 만 별도 프로젝트라 service_role env 로 판단한다.
+ */
+const SESSION_BASED: Record<SiteKey, boolean> = {
+  liquor: false,
+  iq: true,
+  health: true,
+};
+
+/** 대시보드에서 이 사이트를 "연결됨"으로 볼지. */
 export function isSiteConfigured(site: SiteKey): boolean {
+  if (SESSION_BASED[site]) return true;
   const { url, key } = CONFIG[site];
   return Boolean(url && key);
 }
