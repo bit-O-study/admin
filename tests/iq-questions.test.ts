@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { QUESTIONS, TOTAL_QUESTIONS, visualKey, type Question } from "../src/features/iq/questions";
+import {
+  QUESTIONS,
+  TOTAL_QUESTIONS,
+  analogySolutionKeys,
+  findOddRules,
+  visualKey,
+  type CellSpec,
+  type Question,
+} from "../src/features/iq/questions";
 
 /** 문항 서명 — 중복 판정용 */
 function signature(q: Question): string {
@@ -26,8 +34,9 @@ describe("question bank", () => {
       expect(q.options.length).toBeGreaterThanOrEqual(4);
       expect(q.answer).toBeGreaterThanOrEqual(0);
       expect(q.answer).toBeLessThan(q.options.length);
-      const keys =
-        q.type === "matrix" ? q.options.map(visualKey) : (q.options as string[]);
+      let keys: string[];
+      if (q.type === "number" || q.type === "letter") keys = q.options;
+      else keys = (q.options as CellSpec[]).map(visualKey);
       expect(new Set(keys).size).toBe(q.options.length);
     }
   });
@@ -67,6 +76,24 @@ describe("question bank", () => {
     expect(types.size).toBeGreaterThanOrEqual(4);
   });
 
+  it("odd-one-out questions have exactly one 5-to-1 visual rule", () => {
+    for (const q of QUESTIONS) {
+      if (q.type !== "odd") continue;
+      const rules = findOddRules(q.options);
+      expect(rules).toHaveLength(1);
+      expect(rules[0].oddIndex).toBe(q.answer);
+    }
+  });
+
+  it("analogy questions have one answer across plausible transforms", () => {
+    for (const q of QUESTIONS) {
+      if (q.type !== "analogy") continue;
+      expect(analogySolutionKeys(q.a, q.b, q.c)).toEqual([
+        visualKey(q.options[q.answer]),
+      ]);
+    }
+  });
+
   it("generation is deterministic (stable answer keys)", () => {
     const first = QUESTIONS[0];
     expect(Number.isInteger(first.answer)).toBe(true);
@@ -87,7 +114,8 @@ describe("question bank", () => {
     }
   });
 });
-// 도형 유추 해설이 결과 채우기를 구체적으로 명시하는지 (점무늬→외곽선 같은 순환 혼동 방지)
+
+// 도형 유추 해설이 결과 채우기를 구체적으로 명시하는지 (점무늬→외곽선 순환 혼동 방지)
 describe("analogy explanations name the concrete fill result", () => {
   const FILL_KR: Record<string, string> = {
     outline: "외곽선",
@@ -99,9 +127,7 @@ describe("analogy explanations name the concrete fill result", () => {
     for (const q of QUESTIONS) {
       if (q.type !== "analogy") continue;
       const ans = q.options[q.answer];
-      if (q.c.fill !== ans.fill) {
-        expect(q.explanation).toContain(FILL_KR[ans.fill]);
-      }
+      if (q.c.fill !== ans.fill) expect(q.explanation).toContain(FILL_KR[ans.fill]);
     }
   });
 });

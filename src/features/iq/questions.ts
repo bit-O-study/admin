@@ -139,7 +139,33 @@ export function visualKey(c: CellSpec): string {
   return `${c.shape}|${c.count}|${eff}|${c.fill}|${sz}|${c.color}`;
 }
 
-type AttrKey = "shape" | "count" | "fill" | "size" | "rotation";
+export type AttrKey = "shape" | "count" | "fill" | "size" | "rotation";
+
+function attrVisualValue(cell: CellSpec, key: AttrKey): string {
+  if (key !== "rotation") return String(cell[key]);
+  const sym = SYMMETRY[cell.shape];
+  return String(cell.shape === "circle" ? 0 : ((cell.rotation % sym) + sym) % sym);
+}
+
+/** 보기 여섯 개에서 정확히 5:1로 갈리는 시각 속성과 소수 보기의 위치. */
+export function findOddRules(options: CellSpec[]): { key: AttrKey; oddIndex: number }[] {
+  const keys: AttrKey[] = ["shape", "count", "fill", "size", "rotation"];
+  const rules: { key: AttrKey; oddIndex: number }[] = [];
+
+  for (const key of keys) {
+    const groups = new Map<string, number[]>();
+    options.forEach((cell, index) => {
+      const value = attrVisualValue(cell, key);
+      groups.set(value, [...(groups.get(value) ?? []), index]);
+    });
+    const sizes = [...groups.values()].map((indexes) => indexes.length).sort((a, b) => a - b);
+    if (sizes.length === 2 && sizes[0] === 1 && sizes[1] === 5) {
+      const oddIndex = [...groups.values()].find((indexes) => indexes.length === 1)?.[0];
+      if (oddIndex !== undefined) rules.push({ key, oddIndex });
+    }
+  }
+  return rules;
+}
 
 function domain(key: AttrKey): (Shape | number | FillStyle)[] {
   if (key === "shape") return SHAPE_POOL;
@@ -400,6 +426,8 @@ function makeOdd(seed: number, difficulty: Difficulty): BuiltOdd | null {
     const options = shuffle([...conformers, odd], rng(seed * 13 + 7));
     const answer = options.findIndex((o) => o === odd);
     if (answer < 0) continue;
+    const rules = findOddRules(options);
+    if (rules.length !== 1 || rules[0].key !== sKey || rules[0].oddIndex !== answer) continue;
 
     return {
       options,
@@ -442,6 +470,25 @@ const TRANSFORMS: Transform[] = [
   },
   { name: "rotate", tri: true, apply: (c) => ({ ...c, rotation: (c.rotation + 90) % 360 }) },
 ];
+
+/** A→B를 만족하는 단일·2단계 규칙들이 C에서 만드는 시각적 정답 후보. */
+export function analogySolutionKeys(a: CellSpec, b: CellSpec, c: CellSpec): string[] {
+  const candidates: ((cell: CellSpec) => CellSpec)[] = TRANSFORMS
+    .filter((transform) => !transform.tri || a.shape === "triangle")
+    .map((transform) => transform.apply);
+  const plain = TRANSFORMS.filter((transform) => !transform.tri);
+  for (const first of plain) {
+    for (const second of plain) {
+      if (first === second) continue;
+      candidates.push((cell) => second.apply(first.apply(cell)));
+    }
+  }
+
+  const solutions = candidates
+    .filter((apply) => visualKey(apply(a)) === visualKey(b))
+    .map((apply) => visualKey(apply(c)));
+  return [...new Set(solutions)];
+}
 
 /** 변환 → 한글 설명 (해설 문구용) */
 const TRANSFORM_KR: Record<string, string> = {
@@ -535,6 +582,8 @@ function makeAnalogy(seed: number, difficulty: Difficulty): BuiltAnalogy | null 
     if (visualKey(d) === visualKey(c)) continue;
     if (visualKey(c) === visualKey(a)) continue;
     if (visualKey(d) === visualKey(b)) continue;
+    const solutionKeys = analogySolutionKeys(a, b, c);
+    if (solutionKeys.length !== 1 || solutionKeys[0] !== visualKey(d)) continue;
 
     const cands: CellSpec[] = [];
     // 부분만 적용한 결과(가장 그럴듯한 오답)
