@@ -5,12 +5,36 @@ import {
   isSiteConfigured,
   type SiteKey,
 } from "@/lib/supabase/admin-clients";
+import { getMembers } from "@/features/health/data";
+import { dashboardSummary } from "@/features/health/dashboard-stats";
+import { getIqStats } from "@/features/iq/data";
 
 export const dynamic = "force-dynamic";
 
 const SITES: SiteKey[] = ["liquor", "iq", "health"];
 
-export default function AdminDashboardPage() {
+type Stat = { label: string; value: string };
+
+function fmt(n: number): string {
+  return n.toLocaleString("ko-KR");
+}
+
+export default async function AdminDashboardPage() {
+  // 도메인별 핵심 통계 — 헬쑤=총회원수, 아이큐=총방문·총응시.
+  const [members, iq] = await Promise.all([getMembers(), getIqStats()]);
+  const health = dashboardSummary(
+    members.map((m) => ({ createdAt: m.createdAt, withdrawnAt: m.withdrawnAt })),
+  );
+
+  const STATS: Record<SiteKey, Stat[]> = {
+    health: [{ label: "총 회원수", value: `${fmt(health.totalMembers)}명` }],
+    iq: [
+      { label: "총 방문수", value: fmt(iq?.totalVisits ?? 0) },
+      { label: "총 응시수", value: fmt(iq?.totalTests ?? 0) },
+    ],
+    liquor: [],
+  };
+
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
       <header className="mb-6">
@@ -24,6 +48,7 @@ export default function AdminDashboardPage() {
         {SITES.map((site) => {
           const meta = SITE_META[site];
           const configured = isSiteConfigured(site);
+          const stats = STATS[site];
           return (
             <Link
               key={site}
@@ -43,7 +68,25 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
               <p className="mt-3 font-bold">{meta.label}</p>
-              <p className="mt-0.5 text-sm text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300">
+
+              {stats.length > 0 ? (
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                  {stats.map((s) => (
+                    <div key={s.label}>
+                      <p className="text-[11px] font-semibold text-zinc-400">
+                        {s.label}
+                      </p>
+                      <p className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
+                        {s.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-zinc-400">가격 · 상품 관리</p>
+              )}
+
+              <p className="mt-3 text-sm text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300">
                 관리 열기 →
               </p>
             </Link>
