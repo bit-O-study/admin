@@ -145,3 +145,26 @@ describe("validateLiquorPatch", () => {
     }
   });
 });
+describe("validateLiquorPatch — 향 프로필/class", () => {
+  it("향 점수(0~10)와 class 를 받는다", () => {
+    const res = validateLiquorPatch({
+      normalizedName: "x",
+      clazz: "싱글몰트",
+      sweet: "7",
+      smoky: "3.5",
+      body: "0",
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.patch.clazz).toBe("싱글몰트");
+      expect(res.patch.sweet).toBe(7);
+      expect(res.patch.smoky).toBe(3.5);
+      expect(res.patch.body).toBe(0);
+      expect(res.patch.fruity).toBeNull();
+    }
+  });
+  it("향 점수 범위(0~10) 밖은 거부", () => {
+    expect(validateLiquorPatch({ normalizedName: "x", woody: "11" }).ok).toBe(false);
+    expect(validateLiquorPatch({ normalizedName: "x", spicy: "-1" }).ok).toBe(false);
+  });
+});

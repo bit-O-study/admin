@@ -18,9 +18,35 @@ export type LiquorRow = {
   productName: string | null;
   productUrl: string | null;
   imageUrl: string | null;
+  clazz: string | null;
+  sweet: number | null;
+  smoky: number | null;
+  fruity: number | null;
+  spicy: number | null;
+  woody: number | null;
+  body: number | null;
   updatedAt: string;
   /** 최신 crawled_at 기준 대표 가격(없을 수 있음). */
   latestPrice: LiquorPrice | null;
+};
+
+/** 향 프로필 축(레이더 차트) — 0~10 척도. */
+export const FLAVOR_AXES = [
+  "sweet",
+  "smoky",
+  "fruity",
+  "spicy",
+  "woody",
+  "body",
+] as const;
+export type FlavorAxis = (typeof FLAVOR_AXES)[number];
+export const FLAVOR_LABEL: Record<FlavorAxis, string> = {
+  sweet: "단맛",
+  smoky: "스모키",
+  fruity: "과일향",
+  spicy: "스파이시",
+  woody: "우디",
+  body: "바디",
 };
 
 /** liquor_price 테이블 1행(판매처별 가격 이력). */
@@ -44,6 +70,13 @@ export type LiquorPatch = {
   alcoholPercent: number | null;
   productUrl: string | null;
   imageUrl: string | null;
+  clazz: string | null;
+  sweet: number | null;
+  smoky: number | null;
+  fruity: number | null;
+  spicy: number | null;
+  woody: number | null;
+  body: number | null;
 };
 
 /** 검색어 정규화 — 앞뒤 공백 제거 + 소문자. */
@@ -120,6 +153,13 @@ export function validateLiquorPatch(input: {
   alcoholPercent?: string;
   productUrl?: string;
   imageUrl?: string;
+  clazz?: string;
+  sweet?: string;
+  smoky?: string;
+  fruity?: string;
+  spicy?: string;
+  woody?: string;
+  body?: string;
 }): PatchValidation {
   const normalizedName = (input.normalizedName ?? "").trim();
   if (!normalizedName) {
@@ -146,6 +186,25 @@ export function validateLiquorPatch(input: {
     return { ok: false, error: "이미지 URL 은 http(s) 형식이어야 합니다." };
   }
 
+  const flavors: Record<FlavorAxis, number | null> = {
+    sweet: null,
+    smoky: null,
+    fruity: null,
+    spicy: null,
+    woody: null,
+    body: null,
+  };
+  for (const axis of FLAVOR_AXES) {
+    const v = parseNullableScore(input[axis]);
+    if (v === INVALID) {
+      return {
+        ok: false,
+        error: `${FLAVOR_LABEL[axis]} 값은 0~10 사이 숫자여야 합니다.`,
+      };
+    }
+    flavors[axis] = v;
+  }
+
   return {
     ok: true,
     patch: {
@@ -158,8 +217,21 @@ export function validateLiquorPatch(input: {
       alcoholPercent,
       productUrl,
       imageUrl,
+      clazz: emptyToNull(input.clazz),
+      ...flavors,
     },
   };
+}
+
+/** 향 프로필 점수 파싱 — 0~10 (소수 허용). 빈 값은 null. */
+function parseNullableScore(
+  s: string | undefined,
+): number | null | typeof INVALID {
+  const t = (s ?? "").trim();
+  if (t === "") return null;
+  const n = Number(t);
+  if (!Number.isFinite(n) || n < 0 || n > 10) return INVALID;
+  return n;
 }
 
 const INVALID = Symbol("invalid");

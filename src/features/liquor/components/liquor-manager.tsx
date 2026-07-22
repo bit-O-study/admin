@@ -14,12 +14,16 @@ import { cn } from "@/lib/utils";
 import {
   deleteLiquorAction,
   deleteLiquorPriceAction,
+  insertLiquorAction,
   priceHistoryAction,
   searchLiquorAction,
   updateLiquorAction,
+  uploadLiquorImageAction,
 } from "@/features/liquor/actions";
 import {
   discountRate,
+  FLAVOR_AXES,
+  FLAVOR_LABEL,
   formatKrw,
   type LiquorPrice,
   type LiquorRow,
@@ -39,6 +43,7 @@ export function LiquorManager({ initialRows, initialTotal, pageSize }: Props) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<LiquorRow | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -61,9 +66,14 @@ export function LiquorManager({ initialRows, initialTotal, pageSize }: Props) {
     load(q, 1);
   }
 
-  function afterEditSaved(id: number, patch: Partial<LiquorRow>) {
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  function closeModal() {
     setEditing(null);
+    setCreating(false);
+  }
+
+  function afterSaved() {
+    closeModal();
+    load(q, page); // 추가/수정 반영을 위해 현재 페이지 재조회
   }
 
   function afterDeleted(id: number) {
@@ -93,6 +103,13 @@ export function LiquorManager({ initialRows, initialTotal, pageSize }: Props) {
           className="shrink-0 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
         >
           검색
+        </button>
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="shrink-0 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
+          + 상품 추가
         </button>
       </form>
 
@@ -166,12 +183,8 @@ export function LiquorManager({ initialRows, initialTotal, pageSize }: Props) {
         </button>
       </div>
 
-      {editing && (
-        <EditModal
-          row={editing}
-          onClose={() => setEditing(null)}
-          onSaved={afterEditSaved}
-        />
+      {(editing || creating) && (
+        <EditModal row={editing} onClose={closeModal} onSaved={afterSaved} />
       )}
     </div>
   );
@@ -388,22 +401,32 @@ function EditModal({
   onClose,
   onSaved,
 }: {
-  row: LiquorRow;
+  /** null 이면 신규 추가 모드. */
+  row: LiquorRow | null;
   onClose: () => void;
-  onSaved: (id: number, patch: Partial<LiquorRow>) => void;
+  onSaved: () => void;
 }) {
+  const isCreate = row === null;
   const [form, setForm] = useState({
-    productName: row.productName ?? "",
-    normalizedName: row.normalizedName,
-    brand: row.brand ?? "",
-    category: row.category ?? "",
-    country: row.country ?? "",
-    volumeMl: row.volumeMl?.toString() ?? "",
-    alcoholPercent: row.alcoholPercent?.toString() ?? "",
-    productUrl: row.productUrl ?? "",
-    imageUrl: row.imageUrl ?? "",
+    productName: row?.productName ?? "",
+    normalizedName: row?.normalizedName ?? "",
+    brand: row?.brand ?? "",
+    category: row?.category ?? "",
+    country: row?.country ?? "",
+    volumeMl: row?.volumeMl?.toString() ?? "",
+    alcoholPercent: row?.alcoholPercent?.toString() ?? "",
+    productUrl: row?.productUrl ?? "",
+    imageUrl: row?.imageUrl ?? "",
+    clazz: row?.clazz ?? "",
+    sweet: row?.sweet?.toString() ?? "",
+    smoky: row?.smoky?.toString() ?? "",
+    fruity: row?.fruity?.toString() ?? "",
+    spicy: row?.spicy?.toString() ?? "",
+    woody: row?.woody?.toString() ?? "",
+    body: row?.body?.toString() ?? "",
   });
   const [pending, startTransition] = useTransition();
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
@@ -414,25 +437,32 @@ function EditModal({
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const res = await updateLiquorAction(row.id, form);
+      const res = isCreate
+        ? await insertLiquorAction(form)
+        : await updateLiquorAction(row.id, form);
       if (!res.ok) {
         setError(res.error);
         return;
       }
-      onSaved(row.id, {
-        productName: form.productName.trim() || null,
-        normalizedName: form.normalizedName.trim(),
-        brand: form.brand.trim() || null,
-        category: form.category.trim() || null,
-        country: form.country.trim() || null,
-        volumeMl: form.volumeMl.trim() ? Number(form.volumeMl) : null,
-        alcoholPercent: form.alcoholPercent.trim()
-          ? Number(form.alcoholPercent)
-          : null,
-        productUrl: form.productUrl.trim() || null,
-        imageUrl: form.imageUrl.trim() || null,
-      });
+      onSaved();
     });
+  }
+
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await uploadLiquorImageAction(fd);
+    setUploading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    set("imageUrl", res.data.url);
   }
 
   return (
@@ -440,7 +470,7 @@ function EditModal({
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl dark:bg-zinc-900">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-            상품 정보 수정
+            {isCreate ? "상품 추가" : "상품 정보 수정"}
           </h2>
           <button
             type="button"
@@ -490,7 +520,15 @@ function EditModal({
               />
             </Field>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="분류(class)">
+              <input
+                value={form.clazz}
+                onChange={(e) => set("clazz", e.target.value)}
+                className={INPUT}
+                placeholder="싱글몰트 등"
+              />
+            </Field>
             <Field label="원산지">
               <input
                 value={form.country}
@@ -498,6 +536,8 @@ function EditModal({
                 className={INPUT}
               />
             </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <Field label="용량(ml)">
               <input
                 value={form.volumeMl}
@@ -515,6 +555,28 @@ function EditModal({
               />
             </Field>
           </div>
+
+          <div>
+            <p className="mb-1 text-xs font-semibold text-zinc-500">
+              향 프로필 (0~10)
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {FLAVOR_AXES.map((axis) => (
+                <label key={axis} className="block">
+                  <span className="mb-1 block text-[11px] text-zinc-400">
+                    {FLAVOR_LABEL[axis]}
+                  </span>
+                  <input
+                    value={form[axis]}
+                    onChange={(e) => set(axis, e.target.value)}
+                    inputMode="decimal"
+                    className={INPUT}
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
+
           <Field label="상품 URL">
             <input
               value={form.productUrl}
@@ -523,14 +585,34 @@ function EditModal({
               placeholder="https://…"
             />
           </Field>
-          <Field label="이미지 URL">
-            <input
-              value={form.imageUrl}
-              onChange={(e) => set("imageUrl", e.target.value)}
-              className={INPUT}
-              placeholder="https://…"
-            />
+          <Field label="이미지">
+            <div className="flex items-center gap-2">
+              <input
+                value={form.imageUrl}
+                onChange={(e) => set("imageUrl", e.target.value)}
+                className={INPUT}
+                placeholder="https://… 또는 파일 업로드"
+              />
+              <label className="shrink-0 cursor-pointer rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium dark:border-zinc-700">
+                {uploading ? "업로드…" : "파일"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={onPickImage}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+            </div>
           </Field>
+          {form.imageUrl.trim() && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={form.imageUrl}
+              alt=""
+              className="h-20 w-20 rounded-lg object-cover ring-1 ring-zinc-200 dark:ring-zinc-700"
+            />
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
@@ -542,10 +624,10 @@ function EditModal({
             </button>
             <button
               type="submit"
-              disabled={pending}
+              disabled={pending || uploading}
               className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
             >
-              {pending ? "저장 중…" : "저장"}
+              {pending ? "저장 중…" : isCreate ? "추가" : "저장"}
             </button>
           </div>
         </form>

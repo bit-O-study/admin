@@ -9,7 +9,7 @@ import {
 } from "@/features/liquor/liquor";
 
 const LIQUOR_COLUMNS =
-  "id, normalized_name, brand, category, volume_ml, alcohol_percent, country, product_code, product_name, product_url, image_url, updated_at";
+  "id, normalized_name, brand, category, volume_ml, alcohol_percent, country, product_code, product_name, product_url, image_url, clazz:class, sweet, smoky, fruity, spicy, woody, body, updated_at";
 
 type LiquorRecord = {
   id: number;
@@ -23,6 +23,13 @@ type LiquorRecord = {
   product_name: string | null;
   product_url: string | null;
   image_url: string | null;
+  clazz: string | null;
+  sweet: number | null;
+  smoky: number | null;
+  fruity: number | null;
+  spicy: number | null;
+  woody: number | null;
+  body: number | null;
   updated_at: string;
 };
 
@@ -52,6 +59,16 @@ export type LiquorListResult = {
   page: number;
   pageSize: number;
 };
+
+/** 등록된 상품(liquor) 총 개수 — 대시보드 지표용. */
+export async function getLiquorCount(): Promise<number> {
+  const db = adminDb("liquor");
+  const { count, error } = await db
+    .from("liquor")
+    .select("id", { count: "exact", head: true });
+  if (error) return 0;
+  return count ?? 0;
+}
 
 /**
  * 상품 목록 — updated_at 내림차순 + 검색(product_name/normalized_name/brand ilike) +
@@ -100,6 +117,13 @@ export async function getLiquorList(opts: {
     productName: r.product_name,
     productUrl: r.product_url,
     imageUrl: r.image_url,
+    clazz: r.clazz,
+    sweet: r.sweet,
+    smoky: r.smoky,
+    fruity: r.fruity,
+    spicy: r.spicy,
+    woody: r.woody,
+    body: r.body,
     updatedAt: r.updated_at,
     latestPrice: latestByLiquor.get(r.id) ?? null,
   }));
