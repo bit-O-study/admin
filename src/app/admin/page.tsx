@@ -8,7 +8,11 @@ import {
 import { getMembers } from "@/features/health/data";
 import { dashboardSummary } from "@/features/health/dashboard-stats";
 import { getIqStats } from "@/features/iq/data";
-import { getLiquorCount, getLiquorViewTotal } from "@/features/liquor/data";
+import {
+  getLiquorCount,
+  getLiquorViewTotal,
+  getLiquorVisitTotal,
+} from "@/features/liquor/data";
 
 export const dynamic = "force-dynamic";
 
@@ -24,12 +28,14 @@ export default async function AdminDashboardPage() {
   // 도메인별 핵심 통계 — 헬쑤=총회원수, 아이큐=총방문·총응시, 양주=총 상품수.
   // (양주는 방문 추적 테이블이 없어 GA 로 트래픽을 보므로, DB 지표인 상품수를 표시)
   const liquorOn = isSiteConfigured("liquor");
-  const [members, iq, liquorCount, liquorViews] = await Promise.all([
-    getMembers(),
-    getIqStats(),
-    liquorOn ? getLiquorCount() : Promise.resolve(0),
-    liquorOn ? getLiquorViewTotal() : Promise.resolve(0),
-  ]);
+  const [members, iq, liquorCount, liquorViews, liquorVisits] =
+    await Promise.all([
+      getMembers(),
+      getIqStats(),
+      liquorOn ? getLiquorCount() : Promise.resolve(0),
+      liquorOn ? getLiquorViewTotal() : Promise.resolve(0),
+      liquorOn ? getLiquorVisitTotal() : Promise.resolve(0),
+    ]);
   const health = dashboardSummary(
     members.map((m) => ({ createdAt: m.createdAt, withdrawnAt: m.withdrawnAt })),
   );
@@ -41,6 +47,7 @@ export default async function AdminDashboardPage() {
       { label: "총 응시수", value: fmt(iq?.totalTests ?? 0) },
     ],
     liquor: [
+      { label: "방문자수", value: fmt(liquorVisits) },
       { label: "총 상품수", value: fmt(liquorCount) },
       { label: "총 조회수", value: fmt(liquorViews) },
     ],

@@ -89,6 +89,19 @@ export async function getLiquorViewTotal(): Promise<number> {
 }
 
 /**
+ * 사이트 방문자수(site_visit 행 수 — 세션당 1건). site_visit 테이블 미적용이면 0.
+ * (SQL: whisky_app frontend/supabase/add_site_visit.sql)
+ */
+export async function getLiquorVisitTotal(): Promise<number> {
+  const db = adminDb("liquor");
+  const { count, error } = await db
+    .from("site_visit")
+    .select("id", { count: "exact", head: true });
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/**
  * 상품 목록 — updated_at 내림차순 + 검색(product_name/normalized_name/brand ilike) +
  * 페이지네이션. 각 행에 최신 가격 1건을 붙인다.
  */
