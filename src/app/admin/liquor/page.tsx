@@ -1,12 +1,19 @@
 import { NotConfigured } from "@/features/admin/components/not-configured";
 import { SITE_META, isSiteConfigured } from "@/lib/supabase/admin-clients";
+import { getLiquorList } from "@/features/liquor/data";
+import { LiquorManager } from "@/features/liquor/components/liquor-manager";
 
 export const dynamic = "force-dynamic";
 
 const SITE = "liquor" as const;
+const PAGE_SIZE = 30;
 
-export default function LiquorAdminPage() {
+export default async function LiquorAdminPage() {
   const meta = SITE_META[SITE];
+  const configured = isSiteConfigured(SITE);
+  const initial = configured
+    ? await getLiquorList({ page: 1, pageSize: PAGE_SIZE })
+    : null;
 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
@@ -14,14 +21,17 @@ export default function LiquorAdminPage() {
         <h1 className="text-xl font-bold">
           {meta.emoji} {meta.label}
         </h1>
-        <p className="mt-1 text-sm text-zinc-500">가격 · 상품 관리</p>
+        <p className="mt-1 text-sm text-zinc-500">
+          상품 정보 수정 · 목록/검색 조회 · 상품/가격 삭제 · 가격 이력 보기
+        </p>
       </header>
 
-      {isSiteConfigured(SITE) ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-          연결됨. 관리할 테이블(가격/상품 등)을 알려주시면 이 화면에 목록·수정 UI를
-          붙입니다.
-        </div>
+      {configured && initial ? (
+        <LiquorManager
+          initialRows={initial.rows}
+          initialTotal={initial.total}
+          pageSize={PAGE_SIZE}
+        />
       ) : (
         <NotConfigured site={SITE} />
       )}

@@ -1,0 +1,119 @@
+"use server";
+
+import { adminDb } from "@/lib/supabase/admin-clients";
+import { isAdminUser } from "@/features/admin/admin";
+import {
+  getLiquorList,
+  getLiquorPriceHistory,
+  type LiquorListResult,
+} from "@/features/liquor/data";
+import {
+  validateLiquorPatch,
+  type LiquorPrice,
+} from "@/features/liquor/liquor";
+
+export type ActionResult<T = undefined> =
+  | ({ ok: true } & (T extends undefined ? object : { data: T }))
+  | { ok: false; error: string };
+
+/** 목록 검색/페이지 이동(클라이언트에서 호출). */
+export async function searchLiquorAction(input: {
+  q?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<ActionResult<LiquorListResult>> {
+  if (!(await isAdminUser())) {
+    return { ok: false, error: "관리자만 접근할 수 있습니다." };
+  }
+  const data = await getLiquorList(input);
+  return { ok: true, data };
+}
+
+/** 특정 상품의 가격 이력 조회(행 펼칠 때). */
+export async function priceHistoryAction(
+  liquorId: number,
+): Promise<ActionResult<LiquorPrice[]>> {
+  if (!(await isAdminUser())) {
+    return { ok: false, error: "관리자만 접근할 수 있습니다." };
+  }
+  if (!Number.isInteger(liquorId)) {
+    return { ok: false, error: "잘못된 상품 ID 입니다." };
+  }
+  const data = await getLiquorPriceHistory(liquorId);
+  return { ok: true, data };
+}
+
+/** 상품 정보 수정. */
+export async function updateLiquorAction(
+  id: number,
+  input: {
+    productName?: string;
+    normalizedName?: string;
+    brand?: string;
+    category?: string;
+    country?: string;
+    volumeMl?: string;
+    alcoholPercent?: string;
+    productUrl?: string;
+    imageUrl?: string;
+  },
+): Promise<ActionResult> {
+  if (!(await isAdminUser())) {
+    return { ok: false, error: "관리자만 수정할 수 있습니다." };
+  }
+  if (!Number.isInteger(id)) {
+    return { ok: false, error: "잘못된 상품 ID 입니다." };
+  }
+
+  const validated = validateLiquorPatch(input);
+  if (!validated.ok) return { ok: false, error: validated.error };
+  const p = validated.patch;
+
+  const db = adminDb("liquor");
+  const { error } = await db
+    .from("liquor")
+    .update({
+      product_name: p.productName,
+      normalized_name: p.normalizedName,
+      brand: p.brand,
+      category: p.category,
+      country: p.country,
+      volume_ml: p.volumeMl,
+      alcohol_percent: p.alcoholPercent,
+      product_url: p.productUrl,
+      image_url: p.imageUrl,
+    })
+    .eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** 상품 삭제(연결된 가격은 FK on delete cascade 로 함께 삭제됨). */
+export async function deleteLiquorAction(id: number): Promise<ActionResult> {
+  if (!(await isAdminUser())) {
+    return { ok: false, error: "관리자만 삭제할 수 있습니다." };
+  }
+  if (!Number.isInteger(id)) {
+    return { ok: false, error: "잘못된 상품 ID 입니다." };
+  }
+  const db = adminDb("liquor");
+  const { error } = await db.from("liquor").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** 특정 판매처 가격(liquor_price) 1행 삭제. */
+export async function deleteLiquorPriceAction(
+  priceId: number,
+): Promise<ActionResult> {
+  if (!(await isAdminUser())) {
+    return { ok: false, error: "관리자만 삭제할 수 있습니다." };
+  }
+  if (!Number.isInteger(priceId)) {
+    return { ok: false, error: "잘못된 가격 ID 입니다." };
+  }
+  const db = adminDb("liquor");
+  const { error } = await db.from("liquor_price").delete().eq("id", priceId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

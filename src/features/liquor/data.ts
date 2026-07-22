@@ -1,0 +1,153 @@
+import "server-only";
+
+import { adminDb } from "@/lib/supabase/admin-clients";
+import {
+  pickLatestPrice,
+  sanitizeLikeTerm,
+  type LiquorPrice,
+  type LiquorRow,
+} from "@/features/liquor/liquor";
+
+const LIQUOR_COLUMNS =
+  "id, normalized_name, brand, category, volume_ml, alcohol_percent, country, product_code, product_name, product_url, image_url, updated_at";
+
+type LiquorRecord = {
+  id: number;
+  normalized_name: string;
+  brand: string | null;
+  category: string | null;
+  volume_ml: number | null;
+  alcohol_percent: number | null;
+  country: string | null;
+  product_code: string | null;
+  product_name: string | null;
+  product_url: string | null;
+  image_url: string | null;
+  updated_at: string;
+};
+
+type PriceRecord = {
+  id: number;
+  liquor_id: number;
+  source: string;
+  current_price: number | null;
+  original_price: number | null;
+  crawled_at: string;
+};
+
+function toPrice(r: PriceRecord): LiquorPrice {
+  return {
+    id: r.id,
+    liquorId: r.liquor_id,
+    source: r.source,
+    currentPrice: r.current_price,
+    originalPrice: r.original_price,
+    crawledAt: r.crawled_at,
+  };
+}
+
+export type LiquorListResult = {
+  rows: LiquorRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+/**
+ * 상품 목록 — updated_at 내림차순 + 검색(product_name/normalized_name/brand ilike) +
+ * 페이지네이션. 각 행에 최신 가격 1건을 붙인다.
+ */
+export async function getLiquorList(opts: {
+  q?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<LiquorListResult> {
+  const db = adminDb("liquor");
+  const pageSize = clamp(opts.pageSize ?? 30, 1, 100);
+  const page = Math.max(1, opts.page ?? 1);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = db
+    .from("liquor")
+    .select(LIQUOR_COLUMNS, { count: "exact" })
+    .order("updated_at", { ascending: false })
+    .range(from, to);
+
+  const term = sanitizeLikeTerm(opts.q ?? "");
+  if (term) {
+    query = query.or(
+      `product_name.ilike.%${term}%,normalized_name.ilike.%${term}%,brand.ilike.%${term}%`,
+    );
+  }
+
+  const { data, error, count } = await query;
+  if (error || !data) return { rows: [], total: 0, page, pageSize };
+
+  const records = data as LiquorRecord[];
+  const ids = records.map((r) => r.id);
+  const latestByLiquor = await getLatestPrices(ids);
+
+  const rows: LiquorRow[] = records.map((r) => ({
+    id: r.id,
+    normalizedName: r.normalized_name,
+    brand: r.brand,
+    category: r.category,
+    volumeMl: r.volume_ml,
+    alcoholPercent: r.alcohol_percent,
+    country: r.country,
+    productCode: r.product_code,
+    productName: r.product_name,
+    productUrl: r.product_url,
+    imageUrl: r.image_url,
+    updatedAt: r.updated_at,
+    latestPrice: latestByLiquor.get(r.id) ?? null,
+  }));
+
+  return { rows, total: count ?? rows.length, page, pageSize };
+}
+
+/** 주어진 liquor id 들에 대한 최신 가격 1건씩. */
+async function getLatestPrices(
+  ids: number[],
+): Promise<Map<number, LiquorPrice>> {
+  const out = new Map<number, LiquorPrice>();
+  if (ids.length === 0) return out;
+
+  const db = adminDb("liquor");
+  const { data } = await db
+    .from("liquor_price")
+    .select("id, liquor_id, source, current_price, original_price, crawled_at")
+    .in("liquor_id", ids);
+
+  const grouped = new Map<number, LiquorPrice[]>();
+  for (const rec of (data ?? []) as PriceRecord[]) {
+    const p = toPrice(rec);
+    const arr = grouped.get(p.liquorId);
+    if (arr) arr.push(p);
+    else grouped.set(p.liquorId, [p]);
+  }
+  for (const [liquorId, prices] of grouped) {
+    const latest = pickLatestPrice(prices);
+    if (latest) out.set(liquorId, latest);
+  }
+  return out;
+}
+
+/** 특정 상품의 판매처별 가격 이력(crawled_at 내림차순). */
+export async function getLiquorPriceHistory(
+  liquorId: number,
+): Promise<LiquorPrice[]> {
+  const db = adminDb("liquor");
+  const { data, error } = await db
+    .from("liquor_price")
+    .select("id, liquor_id, source, current_price, original_price, crawled_at")
+    .eq("liquor_id", liquorId)
+    .order("crawled_at", { ascending: false });
+  if (error || !data) return [];
+  return (data as PriceRecord[]).map(toPrice);
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, n));
+}
