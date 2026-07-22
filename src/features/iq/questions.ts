@@ -452,6 +452,44 @@ const TRANSFORM_KR: Record<string, string> = {
   rotate: "90° 회전합니다",
 };
 
+/** 채우기/도형 한글 이름 — 해설에 구체적인 before→after 를 명시하기 위함. */
+const FILL_KR: Record<FillStyle, string> = {
+  outline: "외곽선",
+  solid: "꽉 채움",
+  half: "반쪽 채움",
+  dots: "점무늬",
+};
+const SHAPE_KR: Record<Shape, string> = {
+  circle: "원",
+  square: "사각형",
+  triangle: "삼각형",
+  diamond: "마름모",
+  hexagon: "육각형",
+};
+const FILL_CYCLE_KR = FILL_POOL.map((f) => FILL_KR[f]).join("→");
+
+/**
+ * 변환 한 단계를 실제 값(from→to)으로 구체 설명한다.
+ * 특히 채우기는 순환(외곽선→꽉 채움→반쪽 채움→점무늬→외곽선)이라, 점무늬 다음이
+ * 외곽선처럼 "덜 칠해진" 것으로 보여 헷갈리므로 결과 채우기를 이름으로 못박는다.
+ */
+function describeStep(name: string, from: CellSpec, to: CellSpec): string {
+  switch (name) {
+    case "fill":
+      return `칠하기(채우기)를 한 단계 진행합니다 — ${FILL_KR[from.fill]} → ${FILL_KR[to.fill]} (순환: ${FILL_CYCLE_KR}→다시 ${FILL_KR[FILL_POOL[0]]})`;
+    case "count":
+      return `도형 개수를 하나 늘립니다 — ${from.count}개 → ${to.count}개`;
+    case "shape":
+      return `도형 종류를 한 단계 바꿉니다 — ${SHAPE_KR[from.shape]} → ${SHAPE_KR[to.shape]}`;
+    case "size":
+      return "크기를 한 단계 키웁니다";
+    case "rotate":
+      return `${(to.rotation - from.rotation + 360) % 360}° 회전합니다`;
+    default:
+      return TRANSFORM_KR[name] ?? name;
+  }
+}
+
 interface BuiltAnalogy {
   a: CellSpec;
   b: CellSpec;
@@ -520,9 +558,18 @@ function makeAnalogy(seed: number, difficulty: Difficulty): BuiltAnalogy | null 
       answer: answerIdx,
       sig: [a, b, c, d].map(visualKey).join(";"),
       prompt: "왼쪽의 변화 규칙을 오른쪽에도 똑같이 적용하세요. ?에 알맞은 도형은?",
-      explanation: `왼쪽(A→B)에서는 ${parts
-        .map((p) => TRANSFORM_KR[p.name] ?? p.name)
-        .join(", 그리고 ")}. 오른쪽 C에도 같은 규칙을 적용한 도형이 정답입니다.`,
+      explanation: (() => {
+        const steps: string[] = [];
+        let cur: CellSpec = c;
+        for (const p of parts) {
+          const nxt = p.apply(cur);
+          steps.push(describeStep(p.name, cur, nxt));
+          cur = nxt;
+        }
+        return `왼쪽(A→B)에 쓰인 규칙을 오른쪽 C에도 똑같이 적용합니다. ${steps.join(
+          " 그리고 ",
+        )}. 이렇게 C에 적용한 도형이 정답입니다.`;
+      })(),
     };
   }
   return null;

@@ -87,3 +87,21 @@ describe("question bank", () => {
     }
   });
 });
+// 도형 유추 해설이 결과 채우기를 구체적으로 명시하는지 (점무늬→외곽선 같은 순환 혼동 방지)
+describe("analogy explanations name the concrete fill result", () => {
+  const FILL_KR: Record<string, string> = {
+    outline: "외곽선",
+    solid: "꽉 채움",
+    half: "반쪽 채움",
+    dots: "점무늬",
+  };
+  it("채우기가 바뀐 유추 문항 해설에 정답 채우기 이름이 나온다", () => {
+    for (const q of QUESTIONS) {
+      if (q.type !== "analogy") continue;
+      const ans = q.options[q.answer];
+      if (q.c.fill !== ans.fill) {
+        expect(q.explanation).toContain(FILL_KR[ans.fill]);
+      }
+    }
+  });
+});
