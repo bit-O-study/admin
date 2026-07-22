@@ -71,6 +71,24 @@ export async function getLiquorCount(): Promise<number> {
 }
 
 /**
+ * 전체 상품 상세 조회수 합계(liquor.view_count). 양주는 방문자 추적 테이블이 없어
+ * GA 로 트래픽을 보므로, DB 로 볼 수 있는 참여 지표는 상품 조회수 합계다.
+ * (view_count 컬럼/마이그레이션 미적용이면 0.)
+ */
+export async function getLiquorViewTotal(): Promise<number> {
+  const db = adminDb("liquor");
+  const { data, error } = await db
+    .from("liquor")
+    .select("view_count")
+    .limit(10000);
+  if (error || !data) return 0;
+  return (data as { view_count: number | null }[]).reduce(
+    (sum, r) => sum + (r.view_count ?? 0),
+    0,
+  );
+}
+
+/**
  * 상품 목록 — updated_at 내림차순 + 검색(product_name/normalized_name/brand ilike) +
  * 페이지네이션. 각 행에 최신 가격 1건을 붙인다.
  */
