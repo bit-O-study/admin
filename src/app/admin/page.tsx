@@ -15,7 +15,6 @@ import {
   getLiquorVisitToday,
   getLiquorVisitTotal,
 } from "@/features/liquor/data";
-import { getHealthTodayVisits } from "@/features/analytics/vercel";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +46,6 @@ export default async function AdminDashboardPage() {
     liquorViews,
     liquorVisits,
     liquorToday,
-    healthVisits,
   ] = await Promise.all([
     getMembers(),
     getActiveUsersSeries("day"),
@@ -58,7 +56,6 @@ export default async function AdminDashboardPage() {
     liquorOn ? getLiquorViewTotal() : Promise.resolve(0),
     liquorOn ? getLiquorVisitTotal() : Promise.resolve(0),
     liquorOn ? getLiquorVisitToday() : Promise.resolve(0),
-    getHealthTodayVisits(),
   ]);
 
   const lite = members.map((m) => ({
@@ -66,14 +63,17 @@ export default async function AdminDashboardPage() {
     withdrawnAt: m.withdrawnAt,
   }));
   const health = dashboardSummary(lite);
+  // 헬쑤 오늘 방문 = DB 접속(활동) 유저수 오늘값(하단 접속유저수 그래프와 동일 소스).
+  // 헬쑤앱은 로그인 기반이라 '방문 ≈ 접속'. (별도 익명 방문 추적 없음)
+  const healthTodayActive = day.length ? day[day.length - 1].users : 0;
 
   // ── 오늘 방문수(도메인별) ──────────────────────────────
-  // 헬쑤=Vercel Web Analytics, 위스키=site_visit(오늘), 아이큐=iq_admin_stats.today_visits
+  // 헬쑤=admin_active_users(오늘 접속), 위스키=site_visit(오늘), 아이큐=today_visits
   const todayVisits: TodayVisit[] = [
     {
       site: "health",
-      value: healthVisits ? healthVisits.visitors : null,
-      note: healthVisits ? null : "Web Analytics 켜기 필요",
+      value: healthTodayActive,
+      note: "접속(로그인) 기준",
     },
     {
       site: "liquor",
