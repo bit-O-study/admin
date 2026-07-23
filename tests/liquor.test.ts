@@ -8,6 +8,7 @@ import {
   pickLatestPrice,
   sanitizeLikeTerm,
   validateLiquorPatch,
+  validatePriceInput,
   type LiquorPrice,
 } from "../src/features/liquor/liquor";
 
@@ -166,5 +167,62 @@ describe("validateLiquorPatch — 향 프로필/class", () => {
   it("향 점수 범위(0~10) 밖은 거부", () => {
     expect(validateLiquorPatch({ normalizedName: "x", woody: "11" }).ok).toBe(false);
     expect(validateLiquorPatch({ normalizedName: "x", spicy: "-1" }).ok).toBe(false);
+  });
+});
+
+describe("validatePriceInput", () => {
+  it("정상 입력 — 콤마 제거하고 정상가 생략시 현재가로 채움", () => {
+    const res = validatePriceInput({
+      source: "emart_traders",
+      currentPrice: "39,900",
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) {
+      expect(res.patch.source).toBe("EMART_TRADERS");
+      expect(res.patch.currentPrice).toBe(39900);
+      expect(res.patch.originalPrice).toBe(39900);
+      expect(res.patch.productUrl).toBeNull();
+    }
+  });
+
+  it("정상가 ≥ 현재가 이면 할인으로 저장", () => {
+    const res = validatePriceInput({
+      source: "EMART",
+      currentPrice: "39900",
+      originalPrice: "45000",
+    });
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.patch.originalPrice).toBe(45000);
+  });
+
+  it("지원하지 않는 판매처는 거부", () => {
+    expect(validatePriceInput({ source: "GMARKET", currentPrice: "1000" }).ok).toBe(
+      false,
+    );
+  });
+
+  it("현재가 0/음수/빈값은 거부", () => {
+    expect(validatePriceInput({ source: "EMART", currentPrice: "0" }).ok).toBe(false);
+    expect(validatePriceInput({ source: "EMART", currentPrice: "" }).ok).toBe(false);
+  });
+
+  it("정상가가 현재가보다 작으면 거부", () => {
+    expect(
+      validatePriceInput({
+        source: "EMART",
+        currentPrice: "40000",
+        originalPrice: "30000",
+      }).ok,
+    ).toBe(false);
+  });
+
+  it("잘못된 상품 URL 은 거부", () => {
+    expect(
+      validatePriceInput({
+        source: "EMART",
+        currentPrice: "1000",
+        productUrl: "javascript:alert(1)",
+      }).ok,
+    ).toBe(false);
   });
 });

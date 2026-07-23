@@ -1,6 +1,7 @@
 import "server-only";
 
 import { adminDb } from "@/lib/supabase/admin-clients";
+import { seoulDayStartUtcIso } from "@/lib/date";
 import {
   pickLatestPrice,
   sanitizeLikeTerm,
@@ -97,6 +98,20 @@ export async function getLiquorVisitTotal(): Promise<number> {
   const { count, error } = await db
     .from("site_visit")
     .select("id", { count: "exact", head: true });
+  if (error) return 0;
+  return count ?? 0;
+}
+
+/**
+ * 오늘(KST) 사이트 방문수 — site_visit.created_at 이 한국 오늘 00:00 이후인 행 수.
+ * site_visit 테이블 미적용/오류면 0.
+ */
+export async function getLiquorVisitToday(now: Date = new Date()): Promise<number> {
+  const db = adminDb("liquor");
+  const { count, error } = await db
+    .from("site_visit")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", seoulDayStartUtcIso(now));
   if (error) return 0;
   return count ?? 0;
 }

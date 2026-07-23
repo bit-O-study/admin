@@ -9,8 +9,10 @@ import {
 } from "@/features/liquor/data";
 import {
   validateLiquorPatch,
+  validatePriceInput,
   type LiquorPatch,
   type LiquorPrice,
+  type PriceInput,
 } from "@/features/liquor/liquor";
 
 export type ActionResult<T = undefined> =
@@ -187,6 +189,97 @@ export async function deleteLiquorAction(id: number): Promise<ActionResult> {
   const db = adminDb("liquor");
   const { error } = await db.from("liquor").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/**
+ * 판매처별 가격 입력/수정 — liquor_price 를 (liquor_id, source) 로 upsert 하고,
+ * liquor_price_history 에 항상 1행 append(가격 이력·차트가 어긋나지 않도록).
+ * productUrl 이 있으면 liquor_url 도 (liquor_id, source) 로 upsert.
+ * (원본 앱 /api/liquors/manual-price 와 동일한 쓰기 순서.)
+ */
+export async function addLiquorPriceAction(
+  liquorId: number,
+  input: PriceInput,
+): Promise<ActionResult> {
+  if (!(await isAdminUser())) {
+    return { ok: false, error: "관리자만 가격을 입력할 수 있습니다." };
+  }
+  if (!Number.isInteger(liquorId)) {
+    return { ok: false, error: "잘못된 상품 ID 입니다." };
+  }
+
+  const v = validatePriceInput(input);
+  if (!v.ok) return { ok: false, error: v.error };
+  const { source, currentPrice, originalPrice, productUrl } = v.patch;
+
+  const db = adminDb("liquor");
+  const crawledAt = new Date().toISOString();
+  const priceRow = {
+    liquor_id: liquorId,
+    source,
+    current_price: currentPrice,
+    original_price: originalPrice,
+    crawled_at: crawledAt,
+  };
+
+  // 1) liquor_price upsert (select → update/insert)
+  const { data: existing, error: selErr } = await db
+    .from("liquor_price")
+    .select("id")
+    .eq("liquor_id", liquorId)
+    .eq("source", source)
+    .limit(1)
+    .maybeSingle();
+  if (selErr) return { ok: false, error: selErr.message };
+
+  if (existing) {
+    const { error } = await db
+      .from("liquor_price")
+      .update({
+        current_price: currentPrice,
+        original_price: originalPrice,
+        crawled_at: crawledAt,
+      })
+      .eq("id", (existing as { id: number }).id);
+    if (error) return { ok: false, error: error.message };
+  } else {
+    const { error } = await db.from("liquor_price").insert(priceRow);
+    if (error) return { ok: false, error: error.message };
+  }
+
+  // 2) liquor_price_history append (항상)
+  const { error: histErr } = await db
+    .from("liquor_price_history")
+    .insert(priceRow);
+  if (histErr) {
+    return {
+      ok: false,
+      error: `가격은 저장됐지만 이력 적재에 실패했습니다: ${histErr.message}`,
+    };
+  }
+
+  // 3) liquor_url upsert (선택)
+  if (productUrl) {
+    const { data: u } = await db
+      .from("liquor_url")
+      .select("id")
+      .eq("liquor_id", liquorId)
+      .eq("source", source)
+      .limit(1)
+      .maybeSingle();
+    if (u) {
+      await db
+        .from("liquor_url")
+        .update({ product_url: productUrl })
+        .eq("id", (u as { id: number }).id);
+    } else {
+      await db
+        .from("liquor_url")
+        .insert({ liquor_id: liquorId, source, product_url: productUrl });
+    }
+  }
+
   return { ok: true };
 }
 

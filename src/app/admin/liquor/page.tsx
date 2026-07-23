@@ -22,7 +22,7 @@ export default async function LiquorAdminPage() {
           {meta.emoji} {meta.label}
         </h1>
         <p className="mt-1 text-sm text-zinc-500">
-          상품 정보 수정 · 목록/검색 조회 · 상품/가격 삭제 · 가격 이력 보기
+          상품 등록/정보 수정 · 판매처별 가격 입력 · 목록/검색 · 상품/가격 삭제 · 가격 이력
         </p>
       </header>
 

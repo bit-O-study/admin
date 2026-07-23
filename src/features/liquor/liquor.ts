@@ -128,6 +128,96 @@ export function discountRate(
   return Math.round((1 - current / original) * 100);
 }
 
+/**
+ * 판매처(source) 화이트리스트 — 양주 DB 의 liquor_price/liquor_price_history CHECK
+ * 제약과 일치해야 한다(그 외 값은 insert 가 거부됨). 크롤러/원본 앱과 동일한 5종.
+ */
+export const PRICE_SOURCES = [
+  "EMART_TRADERS",
+  "EMART",
+  "COSTCO",
+  "LOTTEON",
+  "HOMEPLUS",
+] as const;
+export type PriceSource = (typeof PRICE_SOURCES)[number];
+export const PRICE_SOURCE_LABEL: Record<PriceSource, string> = {
+  EMART_TRADERS: "이마트 트레이더스",
+  EMART: "이마트",
+  COSTCO: "코스트코",
+  LOTTEON: "롯데온",
+  HOMEPLUS: "홈플러스",
+};
+
+/** 가격 입력 폼(문자열). */
+export type PriceInput = {
+  source?: string;
+  currentPrice?: string;
+  originalPrice?: string;
+  productUrl?: string;
+};
+
+/** 검증된 가격 입력. */
+export type PricePatch = {
+  source: PriceSource;
+  currentPrice: number;
+  originalPrice: number;
+  productUrl: string | null;
+};
+
+export type PriceValidation =
+  | { ok: true; patch: PricePatch }
+  | { ok: false; error: string };
+
+/**
+ * 가격 입력 검증 — 판매처는 화이트리스트, 현재가는 0 초과 정수, 정상가(생략시 현재가와
+ * 동일)는 현재가 이상. 원본 앱(manual-price) 규칙과 동일. 숫자는 콤마 등 제거 후 파싱.
+ */
+export function validatePriceInput(input: PriceInput): PriceValidation {
+  const source = (input.source ?? "").trim().toUpperCase();
+  if (!source) return { ok: false, error: "판매처(source)를 선택하세요." };
+  if (!(PRICE_SOURCES as readonly string[]).includes(source)) {
+    return { ok: false, error: `지원하지 않는 판매처입니다: ${source}` };
+  }
+
+  const currentPrice = parsePriceInt(input.currentPrice);
+  if (currentPrice === null || currentPrice <= 0) {
+    return { ok: false, error: "현재가는 0보다 큰 정수여야 합니다." };
+  }
+
+  const rawOriginal = (input.originalPrice ?? "").trim();
+  let originalPrice = parsePriceInt(input.originalPrice);
+  if (rawOriginal !== "" && originalPrice === null) {
+    return { ok: false, error: "정상가는 숫자여야 합니다." };
+  }
+  if (originalPrice === null) originalPrice = currentPrice;
+  if (originalPrice < currentPrice) {
+    return { ok: false, error: "정상가는 현재가 이상이어야 합니다." };
+  }
+
+  const productUrl = (input.productUrl ?? "").trim() || null;
+  if (productUrl && !isHttpUrl(productUrl)) {
+    return { ok: false, error: "상품 URL 은 http(s) 형식이어야 합니다." };
+  }
+
+  return {
+    ok: true,
+    patch: {
+      source: source as PriceSource,
+      currentPrice,
+      originalPrice,
+      productUrl,
+    },
+  };
+}
+
+/** 가격 문자열 → 정수(숫자 외 문자 제거). 빈 값/파싱불가는 null. */
+function parsePriceInt(s: string | undefined): number | null {
+  const t = (s ?? "").replace(/[^0-9]/g, "");
+  if (t === "") return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}
+
 /** http(s) URL 인지. 빈 문자열은 false. */
 export function isHttpUrl(s: string): boolean {
   try {

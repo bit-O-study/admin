@@ -12,6 +12,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import {
+  addLiquorPriceAction,
   deleteLiquorAction,
   deleteLiquorPriceAction,
   insertLiquorAction,
@@ -25,6 +26,8 @@ import {
   FLAVOR_AXES,
   FLAVOR_LABEL,
   formatKrw,
+  PRICE_SOURCES,
+  PRICE_SOURCE_LABEL,
   type LiquorPrice,
   type LiquorRow,
 } from "@/features/liquor/liquor";
@@ -154,6 +157,7 @@ export function LiquorManager({ initialRows, initialTotal, pageSize }: Props) {
                   row={row}
                   onEdit={() => setEditing(row)}
                   onDeleted={() => afterDeleted(row.id)}
+                  onPriceChanged={() => load(q, page)}
                 />
               ))
             )}
@@ -194,15 +198,27 @@ function LiquorRowView({
   row,
   onEdit,
   onDeleted,
+  onPriceChanged,
 }: {
   row: LiquorRow;
   onEdit: () => void;
   onDeleted: () => void;
+  /** 가격 입력/수정 후 목록(최신가) 재조회용. */
+  onPriceChanged: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [history, setHistory] = useState<LiquorPrice[] | null>(null);
   const [pending, startTransition] = useTransition();
   const [rowError, setRowError] = useState<string | null>(null);
+  const [showPriceForm, setShowPriceForm] = useState(false);
+
+  function reloadHistory() {
+    startTransition(async () => {
+      const res = await priceHistoryAction(row.id);
+      if (res.ok) setHistory(res.data);
+      else setRowError(res.error);
+    });
+  }
 
   const rate = discountRate(
     row.latestPrice?.currentPrice,
@@ -343,6 +359,29 @@ function LiquorRowView({
             {rowError && (
               <p className="mb-2 text-xs text-red-600">{rowError}</p>
             )}
+
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-semibold text-zinc-500">가격 이력</p>
+              <button
+                type="button"
+                onClick={() => setShowPriceForm((s) => !s)}
+                className="rounded-md border border-zinc-300 px-2.5 py-1 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                {showPriceForm ? "닫기" : "+ 가격 입력"}
+              </button>
+            </div>
+
+            {showPriceForm && (
+              <PriceEntryForm
+                liquorId={row.id}
+                onSaved={() => {
+                  setShowPriceForm(false);
+                  reloadHistory();
+                  onPriceChanged();
+                }}
+              />
+            )}
+
             {history === null ? (
               <p className="text-xs text-zinc-400">불러오는 중…</p>
             ) : history.length === 0 ? (
@@ -393,6 +432,110 @@ function LiquorRowView({
         </tr>
       )}
     </>
+  );
+}
+
+function PriceEntryForm({
+  liquorId,
+  onSaved,
+}: {
+  liquorId: number;
+  onSaved: () => void;
+}) {
+  const [source, setSource] = useState<string>(PRICE_SOURCES[0]);
+  const [currentPrice, setCurrentPrice] = useState("");
+  const [originalPrice, setOriginalPrice] = useState("");
+  const [productUrl, setProductUrl] = useState("");
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    startTransition(async () => {
+      const res = await addLiquorPriceAction(liquorId, {
+        source,
+        currentPrice,
+        originalPrice,
+        productUrl,
+      });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      onSaved();
+    });
+  }
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="mb-3 rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900"
+    >
+      {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-zinc-500">
+            판매처
+          </span>
+          <select
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            className={INPUT}
+          >
+            {PRICE_SOURCES.map((s) => (
+              <option key={s} value={s}>
+                {PRICE_SOURCE_LABEL[s]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-zinc-500">
+            현재가(원)
+          </span>
+          <input
+            value={currentPrice}
+            onChange={(e) => setCurrentPrice(e.target.value)}
+            inputMode="numeric"
+            placeholder="39900"
+            className={INPUT}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-zinc-500">
+            정상가(원, 선택)
+          </span>
+          <input
+            value={originalPrice}
+            onChange={(e) => setOriginalPrice(e.target.value)}
+            inputMode="numeric"
+            placeholder="현재가와 같으면 비워두기"
+            className={INPUT}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-[11px] font-semibold text-zinc-500">
+            상품 URL(선택)
+          </span>
+          <input
+            value={productUrl}
+            onChange={(e) => setProductUrl(e.target.value)}
+            placeholder="https://…"
+            className={INPUT}
+          />
+        </label>
+      </div>
+      <div className="mt-2 flex justify-end">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
+        >
+          {pending ? "저장 중…" : "가격 저장"}
+        </button>
+      </div>
+    </form>
   );
 }
 
