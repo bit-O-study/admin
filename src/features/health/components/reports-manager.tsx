@@ -8,6 +8,7 @@ import type { ReportRow } from "@/features/health/reports";
 import { reportKindLabel } from "@/features/health/report";
 import {
   banBadgeLabel,
+  formatReportTime,
   reportActionState,
   suspendButtonLabel,
 } from "@/features/health/report-view";
@@ -77,7 +78,7 @@ export function ReportsManager({ reports }: { reports: ReportRow[] }) {
                 </span>
               ) : null}
               <span className="ml-auto text-[11px] text-zinc-400">
-                {new Date(r.createdAt).toLocaleString("ko-KR")}
+                {formatReportTime(r.createdAt)}
               </span>
             </div>
 

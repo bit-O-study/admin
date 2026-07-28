@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   banBadgeLabel,
+  formatReportTime,
   reportActionState,
   suspendButtonLabel,
 } from "../src/features/health/report-view";
@@ -89,6 +90,19 @@ describe("정지 버튼/뱃지 문구", () => {
   it("정상 회원은 뱃지 없음", () => {
     expect(banBadgeLabel("active", null)).toBeNull();
     expect(banBadgeLabel("banned", null)).toBe("영구정지");
-    expect(banBadgeLabel("suspended", FUTURE)).toContain("정지 중");
+    expect(banBadgeLabel("suspended", FUTURE)).toBe("정지 중 · ~2026. 8. 4.");
+  });
+});
+
+// 서버/브라우저 로케일 차이로 "오전" vs "AM" 하이드레이션 미스매치가 났었다.
+describe("formatReportTime — 로케일 무관 한국시간 고정", () => {
+  it("UTC 를 KST(+9)로 바꿔 표기", () => {
+    expect(formatReportTime("2026-07-28T01:44:19Z")).toBe(
+      "2026. 7. 28. 오전 10:44",
+    );
+    expect(formatReportTime("2026-07-28T05:30:00Z")).toBe(
+      "2026. 7. 28. 오후 2:30",
+    );
+    expect(formatReportTime("nope")).toBe("");
   });
 });
