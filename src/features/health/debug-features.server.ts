@@ -16,7 +16,7 @@ export async function getDebugFeatureStates(): Promise<
   Record<string, DebugVisibility>
 > {
   const out: Record<string, DebugVisibility> = {};
-  for (const f of DEBUG_FEATURES) out[f.id] = "debug";
+  for (const f of DEBUG_FEATURES) out[f.id] = f.id === "pet" ? "hidden" : "debug";
   if (!(await isAdminUser())) return out;
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase

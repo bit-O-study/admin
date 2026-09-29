@@ -15,8 +15,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-/** 카카오 알림 연결은 카카오 OAuth 리다이렉트가 등록된 헬쑤앱 도메인에서 한다. */
-const HEALTH_APP_URL = process.env.HEALTH_APP_URL ?? "https://health-app-five-iota.vercel.app";
 
 const input =
   "rounded-lg border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-600 dark:bg-zinc-900";
@@ -39,14 +37,13 @@ export default async function HealthSupportPage({
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <a
-            href={`${HEALTH_APP_URL}/admin/support/notifications`}
-            target="_blank"
+          <Link
+            href="/admin/health/support/notifications"
             rel="noreferrer"
             className="text-sm text-zinc-600 underline dark:text-zinc-400"
           >
             카카오톡 알림 설정 (헬쑤앱)
-          </a>
+          </Link>
           <SupportRefresh />
         </div>
       </div>
