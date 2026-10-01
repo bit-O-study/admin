@@ -16,5 +16,5 @@ export default async function CoachingPage() {
   const drafts = rows.length ? await db.from("manual_coach_drafts").select("request_id,body").in("request_id", rows.map(r => r.id)) : { data: [], error: null };
   if (pending.error || answered.error || members.error || drafts.error) return <p role="alert">코칭 데이터를 불러오지 못했습니다. DB 마이그레이션과 관리자 권한을 확인해 주세요.</p>;
   const draftMap = new Map((drafts.data || []).map(d => [d.request_id, d.body]));
-  return <main className="space-y-5 p-4"><h1 className="text-2xl font-bold">짐꾼 코칭</h1><CoachingPanel rows={rows.map(r => ({ ...r, draft: draftMap.get(r.id) || "" })) as CoachingRow[]} members={(members.data || []) as CoachingMember[]} /></main>;
+  return <main className="space-y-5 p-4"><h1 className="text-2xl font-bold">헬쑤 코칭</h1><CoachingPanel rows={rows.map(r => ({ ...r, draft: draftMap.get(r.id) || "" })) as CoachingRow[]} members={(members.data || []) as CoachingMember[]} /></main>;
 }
