@@ -14,6 +14,7 @@ const MONTH_OPTIONS = [1, 3, 6, 12];
  *
  * `granted` = 지금 이용 중인 것이 관리자 지급분인가. 결제 중인 회원(`paid`)에게는
  * 지급 버튼을 숨긴다 — 서버도 거절하지만, 눌러 보고 나서야 아는 것보다 낫다.
+ * '요금제 지급' 화면(lite-grant-panel)에서 회원을 고른 뒤 쓴다.
  */
 export function MemberLiteGrant({
   userId,

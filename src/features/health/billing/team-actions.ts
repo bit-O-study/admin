@@ -6,6 +6,7 @@ import {
   createSupabaseServerClient,
 } from "@/lib/supabase/server";
 import { isAdminUser } from "@/features/admin/admin";
+import { isTeamPlan } from "@/features/health/billing/team-plans";
 
 export type TeamActionResult = { ok: true } | { ok: false; error: string };
 
@@ -54,6 +55,46 @@ export async function approveTeamPlanAction(input: {
     .eq("group_id", input.groupId);
   if (error) return { ok: false, error: "승인하지 못했어요." };
 
+  revalidatePath("/admin/health/billing");
+  return { ok: true };
+}
+
+/**
+ * 신청 없이 지급 — **관리자만**. 신청 행이 없는 그룹에 바로 이용 기간을 넣는다.
+ *
+ * 승인(update)과 달리 행을 새로 만들어야 해서 DB 함수(admin_grant_team_plan)를 쓴다 —
+ * 관리자에게는 insert 정책이 없다. 금액은 0원으로 들어간다(받은 돈이 없다).
+ */
+export async function grantTeamPlanAction(input: {
+  groupId: string;
+  plan: string;
+  periodStart: string;
+  periodEnd: string;
+  seats: number;
+  memo?: string;
+}): Promise<TeamActionResult> {
+  if (!(await isAdminUser())) return { ok: false, error: "관리자만 할 수 있어요." };
+  if (!input.groupId) return { ok: false, error: "그룹을 선택해 주세요." };
+  if (!isTeamPlan(input.plan)) return { ok: false, error: "요금제를 확인해 주세요." };
+  const YMD = /^\d{4}-\d{2}-\d{2}$/;
+  if (!YMD.test(input.periodStart) || !YMD.test(input.periodEnd))
+    return { ok: false, error: "이용 기간을 확인해 주세요." };
+  if (input.periodEnd < input.periodStart)
+    return { ok: false, error: "종료일이 시작일보다 빠릅니다." };
+  const seats = Math.max(0, Math.trunc(Number(input.seats) || 0));
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("admin_grant_team_plan", {
+    p_group: input.groupId,
+    p_plan: input.plan,
+    p_start: input.periodStart,
+    p_end: input.periodEnd,
+    p_seats: seats,
+    p_memo: trim(input.memo, 500),
+  });
+  if (error) return { ok: false, error: "지급하지 못했어요." };
+
+  revalidatePath("/admin/health/grants");
   revalidatePath("/admin/health/billing");
   return { ok: true };
 }

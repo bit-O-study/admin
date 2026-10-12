@@ -9,7 +9,7 @@ vi.mock("@/features/health/notifications/messaging.server", () => ({ dispatchSup
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/server", () => ({ after: vi.fn() }));
 import { trainerAction } from "../src/features/health/trainer/actions";
-import { approveTeamPlanAction, cancelTeamPlanAction } from "../src/features/health/billing/team-actions";
+import { approveTeamPlanAction, cancelTeamPlanAction, grantTeamPlanAction } from "../src/features/health/billing/team-actions";
 import { supportNotificationAction, retrySupportNotification } from "../src/features/health/notifications/actions";
 const previous = { ok: false, message: "" };
 const form = (intent: string) => { const f = new FormData(); f.set("intent", intent); f.set("trainer", "trainer-id"); f.set("start", "2026-09-29"); f.set("end", "infinity"); f.set("seats", "25"); return f; };
@@ -35,6 +35,17 @@ it("grants a pass to a member without a request, normalizing the phone", async (
   expect(m.rpc).toHaveBeenCalledWith("pt_admin_grant_pass", { p_trainer: "trainer-id", p_name: "김코치", p_phone: "01012345678", p_start: "2026-09-29", p_end: "2026-10-29", p_seats: 25 });
   m.rpc.mockResolvedValue({ error: { code: "P0001", message: "기간과 회원 수를 확인해 주세요." } });
   expect(await trainerAction(previous, grant())).toEqual({ ok: false, message: "기간과 회원 수를 확인해 주세요." });
+});
+it("grants a team plan without a request through the admin RPC", async () => {
+  const input = { groupId: "group", plan: "gym", periodStart: "2026-10-12", periodEnd: "2026-11-12", seats: 30.7, memo: " 체험 " };
+  expect((await grantTeamPlanAction(input)).ok).toBe(false); expect(m.rpc).not.toHaveBeenCalled();
+  m.admin.mockResolvedValue(true);
+  for (const bad of [{ groupId: "" }, { plan: "premium" }, { periodEnd: "2026-10-11" }, { periodStart: "10/12" }]) expect((await grantTeamPlanAction({ ...input, ...bad })).ok).toBe(false);
+  expect(m.rpc).not.toHaveBeenCalled();
+  expect(await grantTeamPlanAction(input)).toEqual({ ok: true });
+  expect(m.rpc).toHaveBeenCalledWith("admin_grant_team_plan", { p_group: "group", p_plan: "gym", p_start: "2026-10-12", p_end: "2026-11-12", p_seats: 30, p_memo: "체험" });
+  m.rpc.mockResolvedValue({ error: { code: "42501" } });
+  expect((await grantTeamPlanAction(input)).ok).toBe(false);
 });
 it("cancels a pass without approving it or sending a message", async () => {
   m.admin.mockResolvedValue(true); await trainerAction(previous, form("cancel"));

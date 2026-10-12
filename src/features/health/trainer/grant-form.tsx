@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { FilterSelect } from "@/components/filter-select";
 import { TrainerForm } from "./forms";
 import { normalizePhone } from "./types";
 
@@ -12,10 +13,8 @@ export function TrainerGrantForm({ members, start, end }: { members: GrantCandid
   const member = members.find(m => m.userId === user);
   if (!members.length) return <p className="text-sm text-muted">지급할 수 있는 회원이 없어요.</p>;
   return <TrainerForm intent="grant" label="이용권 지급">
-    <label className="block text-sm">회원<select name="trainer" required value={user} onChange={event => setUser(event.target.value)} className={field}>
-      <option value="">회원 선택</option>
-      {members.map(m => <option key={m.userId} value={m.userId}>{m.name ?? "이름 미입력"} · {m.email ?? m.userId.slice(0, 8)}</option>)}
-    </select></label>
+    <div className="text-sm">회원<FilterSelect name="trainer" required label="이용권 지급 회원" emptyLabel="회원 선택" searchPlaceholder="이름·이메일·휴대폰으로 찾기" value={user} onChange={setUser}
+      options={members.map(m => ({ value: m.userId, label: `${m.name ?? "이름 미입력"} · ${m.email ?? m.userId.slice(0, 8)}${m.phone ? ` · ${m.phone}` : ""}` }))} /></div>
     {/* key: 회원을 바꾸면 그 회원 정보로 다시 채운다. */}
     <div key={user} className="grid gap-3 sm:grid-cols-2">
       <label className="text-sm">이름<input name="name" required maxLength={80} defaultValue={member?.name ?? ""} className={field} /></label>

@@ -21,6 +21,7 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     href: "/admin/health/members",
     links: [
       { href: "/admin/health/members", label: "회원정보" },
+      { href: "/admin/health/grants", label: "요금제 지급" },
       { href: "/admin/health/coaching", label: "헬쑤 코칭" },
       { href: "/admin/health/reports", label: "신고" },
       { href: "/admin/health/support", label: "고객센터" },

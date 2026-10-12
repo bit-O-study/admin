@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { listTeamSubscriptions } from "@/features/health/billing/team-store";
 import { TeamAdminList } from "@/features/health/billing/components/team-admin-list";
 import { isTeamActive } from "@/features/health/billing/team-plans";
@@ -48,6 +50,13 @@ export default async function AdminBillingPage() {
         ))}
       </div>
 
+      <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
+        신청하지 않은 그룹에 넣으려면{" "}
+        <Link href="/admin/health/grants" className="font-semibold underline">
+          요금제 지급
+        </Link>{" "}
+        메뉴를 쓰세요.
+      </p>
       <TeamAdminList rows={rows} today={today} />
     </main>
   );

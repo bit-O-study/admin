@@ -37,6 +37,7 @@ export async function grantLiteAction(
       return { ok: false, error: "결제 중인 구독이 있어 지급할 수 없습니다." };
     return { ok: false, error: "지급하지 못했습니다. DB 설정과 권한을 확인해 주세요." };
   }
+  revalidatePath("/admin/health/grants");
   revalidatePath("/admin/health/members");
   revalidatePath("/admin/health/coaching");
   return { ok: true, expiresAt: typeof data === "string" ? data : null };
@@ -50,6 +51,7 @@ export async function revokeLiteAction(userId: string): Promise<LiteGrantResult>
   const { data, error } = await db.rpc("admin_revoke_lite", { p_user: userId });
   if (error) return { ok: false, error: "회수하지 못했습니다. 다시 시도해 주세요." };
   if (data !== true) return { ok: false, error: "회수할 지급 이용권이 없습니다." };
+  revalidatePath("/admin/health/grants");
   revalidatePath("/admin/health/members");
   revalidatePath("/admin/health/coaching");
   return { ok: true, expiresAt: null };

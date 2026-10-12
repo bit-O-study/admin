@@ -115,6 +115,25 @@ export async function listTeamSubscriptions(
 }
 
 /**
+ * 관리자용 — 신청 없이 지급할 수 있는 그룹(팀 요금제 내역이 아직 없는 그룹).
+ * 관리자는 groups 를 RLS 로 읽지 못해서 DB 함수로 받는다.
+ */
+export async function listTeamGrantCandidates(): Promise<
+  { groupId: string; name: string; ownerName: string; ownerEmail: string | null; members: number }[]
+> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("admin_team_grant_candidates");
+  if (error || !data) return [];
+  return (data as Row[]).map((r) => ({
+    groupId: String(r.group_id ?? ""),
+    name: String(r.name ?? ""),
+    ownerName: String(r.owner_name ?? ""),
+    ownerEmail: str(r.owner_email),
+    members: int(r.members),
+  }));
+}
+
+/**
  * 입금 계좌 안내. `app_settings` 는 관리자 전용 RLS 라 SECURITY DEFINER 함수로 받는다
  * (표를 통째로 열면 다른 설정까지 새어 나간다).
  *

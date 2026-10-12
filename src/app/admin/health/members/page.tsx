@@ -1,6 +1,8 @@
 import { getMembers, getMemberSubscriptions } from "@/features/health/data";
 import { banStateOf, BAN_STATE_LABEL } from "@/features/health/ban";
-import { MemberLiteGrant } from "@/features/health/components/member-lite-grant";
+import Link from "next/link";
+
+import { isVerificationUser } from "@/features/health/member-filter";
 import { MemberBanControls } from "@/features/health/components/member-ban-controls";
 import { MemberPasswordReset } from "@/features/health/components/member-password-reset";
 import { RestoreMemberButton } from "@/features/health/components/restore-member-button";
@@ -29,11 +31,21 @@ const EXP_LABEL: Record<string, string> = {
   advanced: "고급",
 };
 
-export default async function HealthMembersPage() {
-  const [members, subs] = await Promise.all([
+export default async function HealthMembersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ verify?: string }>;
+}) {
+  const showVerify = (await searchParams).verify === "1";
+  const [allMembers, subs] = await Promise.all([
     getMembers(),
     getMemberSubscriptions(),
   ]);
+  // 검증유저(E2E 테스트가 만드는 임시 계정)는 기본으로 숨긴다 — 실제 회원 수를 흐린다.
+  const verifyCount = allMembers.filter(isVerificationUser).length;
+  const members = showVerify
+    ? allMembers
+    : allMembers.filter((m) => !isVerificationUser(m));
 
   return (
     <div>
@@ -42,6 +54,19 @@ export default async function HealthMembersPage() {
       </h1>
       <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
         총 {members.length}명
+        {verifyCount > 0 ? (
+          <>
+            {" · "}
+            <Link
+              href={showVerify ? "/admin/health/members" : "/admin/health/members?verify=1"}
+              className="underline"
+            >
+              {showVerify
+                ? `검증유저 ${verifyCount}명 숨기기`
+                : `검증유저 ${verifyCount}명 숨김 · 보기`}
+            </Link>
+          </>
+        ) : null}
       </p>
 
       {members.length === 0 ? (
@@ -116,13 +141,6 @@ export default async function HealthMembersPage() {
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-100 dark:border-zinc-700/60 pt-3">
                   <MemberBanControls userId={m.userId} state={state} />
                   <MemberPasswordReset userId={m.userId} email={m.email} />
-                  {subs && !m.withdrawnAt ? (
-                    <MemberLiteGrant
-                      userId={m.userId}
-                      granted={sub?.granted === true}
-                      paid={sub !== null && !sub.granted}
-                    />
-                  ) : null}
                   {m.withdrawnAt ? (
                     <RestoreMemberButton userId={m.userId} />
                   ) : null}

@@ -29,8 +29,9 @@ export async function trainerAction(_previous: TrainerResult, form: FormData): P
       p_start: text("start"), p_end: text("end"), p_seats: Number(text("seats")),
     });
     if (error) return { ok: false, message: error.code === "P0001" ? error.message : "지급하지 못했어요. 입력 내용을 확인해 주세요." };
+    revalidatePath("/admin/health/grants");
     revalidatePath("/admin/health/trainers");
-    return { ok: true, message: "이용권을 지급했어요." };
+    return { ok: true, message: "이용권을 지급했어요. 기간 변경·해지는 트레이너 이용권 메뉴에서 하세요." };
   }
   if (intent !== "approve" && intent !== "cancel") return { ok: false, message: "지원하지 않는 요청이에요." };
   const db = await createSupabaseServerClient();
