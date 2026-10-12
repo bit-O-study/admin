@@ -1,5 +1,6 @@
-import { getMembers } from "@/features/health/data";
+import { getMembers, getMemberSubscriptions } from "@/features/health/data";
 import { banStateOf, BAN_STATE_LABEL } from "@/features/health/ban";
+import { MemberLiteGrant } from "@/features/health/components/member-lite-grant";
 import { MemberBanControls } from "@/features/health/components/member-ban-controls";
 import { MemberPasswordReset } from "@/features/health/components/member-password-reset";
 import { RestoreMemberButton } from "@/features/health/components/restore-member-button";
@@ -13,6 +14,15 @@ function suspendedUntilLabel(iso: string): string {
 }
 
 const GENDER_LABEL: Record<string, string> = { male: "남", female: "여" };
+/** 구독 상품 id → 화면 이름. 모르는 상품은 id 그대로 보여 준다. */
+const PLAN_LABEL: Record<string, string> = {
+  helssu_lite_monthly: "라이트",
+  helssu_coach_monthly: "라이트",
+  helssu_premium_monthly: "프리미엄",
+};
+const seoulYmd = (iso: string) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date(iso));
+
 const EXP_LABEL: Record<string, string> = {
   beginner: "초급",
   intermediate: "중급",
@@ -20,7 +30,10 @@ const EXP_LABEL: Record<string, string> = {
 };
 
 export default async function HealthMembersPage() {
-  const members = await getMembers();
+  const [members, subs] = await Promise.all([
+    getMembers(),
+    getMemberSubscriptions(),
+  ]);
 
   return (
     <div>
@@ -55,6 +68,7 @@ export default async function HealthMembersPage() {
               m.weightKg !== null ? `${m.weightKg}kg` : null,
               m.phone ?? null,
             ].filter(Boolean);
+            const sub = subs?.get(m.userId) ?? null;
             return (
               <li
                 key={m.userId}
@@ -70,6 +84,12 @@ export default async function HealthMembersPage() {
                     </p>
                   </div>
                   <span className="flex shrink-0 flex-wrap items-center gap-1">
+                    {sub ? (
+                      <span className="whitespace-nowrap rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-700 dark:bg-violet-950/40 dark:text-violet-400">
+                        {PLAN_LABEL[sub.productId] ?? sub.productId}
+                        {sub.granted ? " 지급" : ""} ~{seoulYmd(sub.expiresAt)}
+                      </span>
+                    ) : null}
                     {m.withdrawnAt ? (
                       <span className="whitespace-nowrap rounded-full bg-zinc-200 px-2 py-0.5 text-[11px] font-bold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
                         탈퇴
@@ -96,6 +116,13 @@ export default async function HealthMembersPage() {
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-100 dark:border-zinc-700/60 pt-3">
                   <MemberBanControls userId={m.userId} state={state} />
                   <MemberPasswordReset userId={m.userId} email={m.email} />
+                  {subs && !m.withdrawnAt ? (
+                    <MemberLiteGrant
+                      userId={m.userId}
+                      granted={sub?.granted === true}
+                      paid={sub !== null && !sub.granted}
+                    />
+                  ) : null}
                   {m.withdrawnAt ? (
                     <RestoreMemberButton userId={m.userId} />
                   ) : null}

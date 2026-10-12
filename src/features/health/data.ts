@@ -92,6 +92,39 @@ export async function getMembers(): Promise<MemberRow[]> {
   }));
 }
 
+export type MemberSubscription = {
+  productId: string;
+  expiresAt: string;
+  /** 결제가 아니라 관리자가 지급한 이용권인가. */
+  granted: boolean;
+};
+
+/**
+ * 지금 이용 중인 구독(결제·지급) — admin_member_subscriptions() RPC.
+ * 못 읽으면 null — 빈 목록으로 뭉개면 결제 중인 회원에게 지급 버튼이 뜬다.
+ */
+export async function getMemberSubscriptions(): Promise<Map<
+  string,
+  MemberSubscription
+> | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("admin_member_subscriptions");
+  if (error || !data) return null;
+  return new Map(
+    (
+      data as {
+        user_id: string;
+        product_id: string;
+        expires_at: string;
+        granted: boolean;
+      }[]
+    ).map((r) => [
+      r.user_id,
+      { productId: r.product_id, expiresAt: r.expires_at, granted: r.granted === true },
+    ]),
+  );
+}
+
 /** 활동(접속) 유저수 시계열 — admin_active_users(p_gran) RPC. */
 export async function getActiveUsersSeries(
   gran: "day" | "month" | "year",
