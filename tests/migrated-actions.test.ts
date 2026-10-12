@@ -25,6 +25,17 @@ it("preserves unlimited trainer passes using the existing authorized RPC", async
   m.admin.mockResolvedValue(true); expect((await trainerAction(previous, form("approve"))).ok).toBe(true);
   expect(m.rpc).toHaveBeenCalledWith("pt_admin_pass", { p_trainer: "trainer-id", p_start: "2026-09-29", p_end: "infinity", p_seats: 25, p_active: true });
 });
+it("grants a pass to a member without a request, normalizing the phone", async () => {
+  const grant = () => { const f = form("grant"); f.set("end", "2026-10-29"); f.set("name", " 김코치 "); f.set("phone", "010-1234-5678"); return f; };
+  expect((await trainerAction(previous, grant())).ok).toBe(false); expect(m.rpc).not.toHaveBeenCalled();
+  m.admin.mockResolvedValue(true);
+  const bad = grant(); bad.set("phone", "02-123-4567");
+  expect((await trainerAction(previous, bad)).ok).toBe(false); expect(m.rpc).not.toHaveBeenCalled();
+  expect((await trainerAction(previous, grant())).ok).toBe(true);
+  expect(m.rpc).toHaveBeenCalledWith("pt_admin_grant_pass", { p_trainer: "trainer-id", p_name: "김코치", p_phone: "01012345678", p_start: "2026-09-29", p_end: "2026-10-29", p_seats: 25 });
+  m.rpc.mockResolvedValue({ error: { code: "P0001", message: "기간과 회원 수를 확인해 주세요." } });
+  expect(await trainerAction(previous, grant())).toEqual({ ok: false, message: "기간과 회원 수를 확인해 주세요." });
+});
 it("cancels a pass without approving it or sending a message", async () => {
   m.admin.mockResolvedValue(true); await trainerAction(previous, form("cancel"));
   expect(m.rpc).toHaveBeenCalledWith("pt_admin_pass", expect.objectContaining({ p_active: false })); expect(m.dispatch).not.toHaveBeenCalled();

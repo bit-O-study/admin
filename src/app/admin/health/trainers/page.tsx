@@ -2,19 +2,29 @@ import { redirect } from "next/navigation";
 import { isAdminUser } from "@/features/admin/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { TrainerForm } from "@/features/health/trainer/forms";
+import { TrainerGrantForm } from "@/features/health/trainer/grant-form";
+import { getMembers } from "@/features/health/data";
+import { addMonthsYmd } from "@/features/health/billing/team-plans";
 import type { TrainerPass } from "@/features/health/trainer/types";
 export const dynamic = "force-dynamic";
 export default async function TrainerAdminPage() {
   if (!(await isAdminUser())) redirect("/login");
   const db = await createSupabaseServerClient();
-  const [{ data: passes, error }, { data: messages }] = await Promise.all([
+  const [{ data: passes, error }, { data: messages }, members] = await Promise.all([
     db.from("pt_passes").select("*").order("updated_at", { ascending: false }),
     db.from("pt_notifications").select("id,kind,status,created_at,provider_id").order("created_at", { ascending: false }).limit(30),
+    getMembers(),
   ]);
   if (error) throw new Error("트레이너 신청 내역을 불러오지 못했어요.");
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+  // 이미 신청·이용 내역이 있는 회원은 아래 목록에서 기간을 바꾼다 — 지급 대상에서 뺀다.
+  const hasPass = new Set((passes ?? []).map(pass => pass.trainer_id as string));
+  const candidates = members.filter(m => !m.withdrawnAt && !hasPass.has(m.userId)).map(m => ({ userId: m.userId, name: m.name, email: m.email, phone: m.phone }));
   return <main className="space-y-6 p-5"><h1 className="app-title">트레이너 이용권</h1>
     <p className="text-sm text-muted">결제 확인 후 기간과 회원 수를 승인하세요. 그룹 요금제와 별도입니다.</p>
+    <section className="app-card space-y-3 p-5"><h2 className="font-semibold">신청 없이 지급</h2><p className="text-xs text-muted">결제·신청 없이 바로 이용 중이 됩니다. 지급한 뒤에는 아래 목록에서 기간을 바꾸거나 해지하세요.</p>
+      <TrainerGrantForm members={candidates} start={today} end={addMonthsYmd(today, 1)} />
+    </section>
     {!(passes?.length) && <p>신청 내역이 없어요.</p>}
     {(passes as TrainerPass[] ?? []).map(pass => <section key={pass.trainer_id} className="app-card space-y-3 p-5"><h2 className="font-semibold">{pass.name} · {pass.phone}</h2><p className="text-sm">{pass.status === "requested" ? "승인 대기" : pass.status === "active" ? "승인됨" : "해지됨"}</p>
       <TrainerForm intent="approve" label="기간 승인·변경"><input type="hidden" name="trainer" value={pass.trainer_id} />
