@@ -1,4 +1,5 @@
 import "server-only";
+export { createSupabaseServerClient as healthSessionDb } from "./server";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 

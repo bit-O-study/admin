@@ -23,6 +23,13 @@ describe("activeHref", () => {
       "/admin/health/reports",
     );
   });
+  it("헬쑤 고객센터 목록·상세", () => {
+    expect(activeHref("/admin/health/support", hrefs)).toBe("/admin/health/support");
+    expect(
+      activeHref("/admin/health/support/c432b98c-51b6-49eb-9172-5b55553f883c", hrefs),
+    ).toBe("/admin/health/support");
+  });
+
 
   it("위스키", () => {
     expect(activeHref("/admin/liquor", hrefs)).toBe("/admin/liquor");

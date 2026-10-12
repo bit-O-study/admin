@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
+
+const subscribe = () => () => {};
+const clientMounted = () => true;
+const serverMounted = () => false;
 
 /** 인앱 confirm 다이얼로그. (헬스앱에서 이식) */
 export function ConfirmDialog({
@@ -24,11 +28,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(subscribe, clientMounted, serverMounted);
 
   useEffect(() => {
     if (!open) return;

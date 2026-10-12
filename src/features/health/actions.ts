@@ -1,5 +1,6 @@
 "use server";
 
+import { parseDepositInfo, DEPOSIT_INFO_KEY } from "@/features/health/billing/deposit-info";
 import { revalidatePath } from "next/cache";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -309,5 +310,19 @@ export async function restoreUserAction(
   });
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/health/members");
+  return { ok: true };
+}
+export async function setDepositInfoAction(
+  input: { bank: string; account: string; holder: string; note: string },
+): Promise<AdminActionResult> {
+  if (!(await isAdminUser())) return { ok: false, error: "관리자만 가능합니다." };
+  const info = parseDepositInfo(input);
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("app_settings").upsert(
+    { key: DEPOSIT_INFO_KEY, value: info, updated_at: new Date().toISOString() },
+    { onConflict: "key" },
+  );
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/health/settings");
   return { ok: true };
 }

@@ -8,3 +8,19 @@ html,
 body {
   min-height: 100%;
 }
+
+@theme inline {
+  --color-brand: #059669;
+  --color-line: var(--admin-line);
+  --color-muted: var(--admin-muted);
+}
+:root { --admin-line: #d4d4d8; --admin-muted: #52525b; }
+@media (prefers-color-scheme: dark) {
+  :root { --admin-line: #3f3f46; --admin-muted: #a1a1aa; }
+}
+@layer components {
+  .app-card { @apply rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900; }
+  .app-title { @apply text-xl font-bold; }
+  .app-page { @apply space-y-5; }
+  .app-container { @apply mx-auto w-full max-w-4xl; }
+}
