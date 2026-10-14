@@ -25,3 +25,8 @@ next-env.d.ts
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+# Android local caches and build outputs
+/android/.gradle/
+/android/local.properties
+/android/**/build/
+/android/*.jks
