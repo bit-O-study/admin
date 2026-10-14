@@ -1,230 +1,82 @@
-import Link from "next/link";
-
-import {
-  SITE_META,
-  isSiteConfigured,
-  type SiteKey,
-} from "@/lib/supabase/admin-clients";
+import { isSiteConfigured } from "@/lib/supabase/admin-clients";
 import { getActiveUsersSeries, getMembers } from "@/features/health/data";
-import { dashboardSummary } from "@/features/health/dashboard-stats";
 import { HealthDashboard } from "@/features/health/components/health-dashboard";
 import { getIqStats } from "@/features/iq/data";
-import { getMemoStats, isMemoConfigured } from "@/features/memo/data";
 import {
-  getLiquorCount,
-  getLiquorViewTotal,
   getLiquorVisitToday,
   getLiquorVisitTotal,
 } from "@/features/liquor/data";
+import { getMemoStats, isMemoConfigured } from "@/features/memo/data";
+import { getActionItems } from "@/features/admin/action-items";
+import { DashboardView, type ServiceKpi } from "@/features/admin/components/dashboard-view";
+import type { ServiceKey } from "@/features/admin/services";
 
 export const dynamic = "force-dynamic";
 
-const SITES: SiteKey[] = ["health", "iq", "liquor"];
-
-type Stat = { label: string; value: string };
-
-function fmt(n: number): string {
-  return n.toLocaleString("ko-KR");
-}
-
-/** 오늘 방문수 카드 데이터. value=null 이면 "—". memo 는 Supabase 사이트가 아니라 SiteKey 밖에 둔다. */
-type VisitSite = SiteKey | "memo";
-type TodayVisit = {
-  site: VisitSite;
-  value: number | null;
-  note: string | null;
-};
-
+/**
+ * 통합 대시보드 (2026-10-14 리뉴얼) — 처리할 일 → 서비스별 오늘 접속 → 헬쑤 회원·접속 그래프.
+ * 서비스 하나가 실패해도 그 카드만 '—' 로 두고 나머지는 뜬다.
+ */
 export default async function AdminDashboardPage() {
   const liquorOn = isSiteConfigured("liquor");
 
-  const [
-    members,
-    day,
-    month,
-    year,
-    iq,
-    liquorCount,
-    liquorViews,
-    liquorVisits,
-    liquorToday,
-    memo,
-  ] = await Promise.all([
+  const [actions, members, day, month, year, iq, memo, liquorToday, liquorTotal] = await Promise.all([
+    getActionItems(),
     getMembers(),
     getActiveUsersSeries("day"),
     getActiveUsersSeries("month"),
     getActiveUsersSeries("year"),
     getIqStats(),
-    liquorOn ? getLiquorCount() : Promise.resolve(0),
-    liquorOn ? getLiquorViewTotal() : Promise.resolve(0),
-    liquorOn ? getLiquorVisitTotal() : Promise.resolve(0),
-    liquorOn ? getLiquorVisitToday() : Promise.resolve(0),
-    // 오늘 숫자만 필요해서 하루치만 받는다.
-    getMemoStats(1),
+    getMemoStats(30),
+    liquorOn ? getLiquorVisitToday() : Promise.resolve(null),
+    liquorOn ? getLiquorVisitTotal() : Promise.resolve(null),
   ]);
 
-  const lite = members.map((m) => ({
-    createdAt: m.createdAt,
-    withdrawnAt: m.withdrawnAt,
-  }));
-  const health = dashboardSummary(lite);
-  // 헬쑤 오늘 방문 = DB 접속(활동) 유저수 오늘값(하단 접속유저수 그래프와 동일 소스).
-  // 헬쑤앱은 로그인 기반이라 '방문 ≈ 접속'. (별도 익명 방문 추적 없음)
-  const healthTodayActive = day.length ? day[day.length - 1].users : 0;
+  const lite = members.map((m) => ({ createdAt: m.createdAt, withdrawnAt: m.withdrawnAt }));
+  // 헬쑤 = 로그인 기반이라 '방문 ≈ 접속' — admin_active_users 일별 값.
+  const healthDays = day.slice(-30).map((d) => d.users);
+  const memoDays = memo?.days ?? [];
 
-  // ── 오늘 방문수(도메인별) ──────────────────────────────
-  // 헬쑤=admin_active_users(오늘 접속), 위스키=site_visit(오늘), 아이큐=today_visits
-  const todayVisits: TodayVisit[] = [
-    {
-      site: "health",
-      value: healthTodayActive,
-      note: "접속(로그인) 기준",
+  const kpis: Record<ServiceKey, ServiceKpi> = {
+    health: {
+      label: "로그인 접속",
+      today: healthDays.length ? healthDays[healthDays.length - 1] : 0,
+      yesterday: healthDays.length > 1 ? healthDays[healthDays.length - 2] : null,
+      spark: healthDays,
+      href: "/admin/health/members",
+      extra: [{ label: "총 회원", value: `${lite.filter((m) => !m.withdrawnAt).length.toLocaleString("ko-KR")}명` }],
     },
-    {
-      site: "liquor",
-      value: liquorOn ? liquorToday : null,
-      note: liquorOn ? null : "미설정",
+    memo: {
+      label: "로그인 접속",
+      today: memo ? (memoDays.at(-1)?.visitors ?? 0) : null,
+      yesterday: memo && memoDays.length > 1 ? memoDays[memoDays.length - 2].visitors : null,
+      spark: memoDays.map((d) => d.visitors),
+      href: "/admin/memo",
+      note: memo ? undefined : isMemoConfigured() ? "불러오지 못함" : "미설정",
+      extra: memo ? [{ label: "전체 사용자", value: `${memo.totals.users}명` }] : undefined,
     },
-    {
-      site: "iq",
-      value: iq ? iq.todayVisits : null,
-      note: iq ? null : "데이터 없음",
+    iq: {
+      label: "방문",
+      today: iq ? iq.todayVisits : null,
+      href: "/admin/iq",
+      note: iq ? undefined : "데이터 없음",
+      extra: iq ? [{ label: "총 응시", value: iq.totalTests.toLocaleString("ko-KR") }] : undefined,
     },
-    {
-      // 메모 = 그날 앱을 연 로그인 사용자 수(daily_visits).
-      site: "memo",
-      value: memo ? (memo.days.at(-1)?.visitors ?? 0) : null,
-      note: memo ? "접속(로그인) 기준" : isMemoConfigured() ? "불러오지 못함" : "미설정",
+    liquor: {
+      label: "방문",
+      today: liquorToday,
+      href: "/admin/liquor",
+      note: liquorOn ? undefined : "미설정",
+      extra: liquorTotal !== null ? [{ label: "누적", value: liquorTotal.toLocaleString("ko-KR") }] : undefined,
     },
-  ];
-
-  const STATS: Record<SiteKey, Stat[]> = {
-    health: [{ label: "총 회원수", value: `${fmt(health.totalMembers)}명` }],
-    iq: [
-      { label: "총 방문수", value: fmt(iq?.totalVisits ?? 0) },
-      { label: "총 응시수", value: fmt(iq?.totalTests ?? 0) },
-    ],
-    liquor: [
-      { label: "방문자수", value: fmt(liquorVisits) },
-      { label: "총 상품수", value: fmt(liquorCount) },
-      { label: "총 조회수", value: fmt(liquorViews) },
-    ],
   };
 
   return (
-    <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
-      <header className="mb-6">
-        <h1 className="text-xl font-bold">대시보드</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          네 서비스를 한 곳에서 관리합니다.
-        </p>
-      </header>
-
-      {/* ── 오늘 방문수 ── */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-sm font-bold text-zinc-900 dark:text-zinc-100">
-          오늘 방문수{" "}
-          <span className="font-normal text-zinc-400">(도메인별)</span>
-        </h2>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {todayVisits.map((v) => (
-            <TodayVisitCard key={v.site} visit={v} />
-          ))}
-        </div>
-      </section>
-
-      {/* ── 헬쑤앱 회원·접속 추이(바깥 대시보드로 이동) ── */}
-      <section className="mb-8">
+    <DashboardView actions={actions} kpis={kpis}>
+      <section>
+        <h2 className="mb-3 text-sm font-extrabold text-zinc-950 dark:text-zinc-50">헬쑤 회원·접속 추이</h2>
         <HealthDashboard members={lite} active={{ day, month, year }} />
       </section>
-
-      {/* ── 사이트 요약 · 바로가기 ── */}
-      <section>
-        <h2 className="mb-3 text-sm font-bold text-zinc-900 dark:text-zinc-100">
-          사이트 바로가기
-        </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SITES.map((site) => {
-            const meta = SITE_META[site];
-            const configured = isSiteConfigured(site);
-            const stats = STATS[site];
-            return (
-              <Link
-                key={site}
-                href={`/admin/${site}`}
-                className="group rounded-2xl border border-zinc-200 bg-white p-5 transition hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-3xl">{meta.emoji}</span>
-                  <span
-                    className={
-                      configured
-                        ? "rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400"
-                        : "rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-500 dark:bg-zinc-800"
-                    }
-                  >
-                    {configured ? "연결됨" : "미설정"}
-                  </span>
-                </div>
-                <p className="mt-3 font-bold">{meta.label}</p>
-
-                {stats.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
-                    {stats.map((s) => (
-                      <div key={s.label}>
-                        <p className="text-[11px] font-semibold text-zinc-400">
-                          {s.label}
-                        </p>
-                        <p className="text-lg font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
-                          {s.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-3 text-sm text-zinc-400">가격 · 상품 관리</p>
-                )}
-
-                <p className="mt-3 text-sm text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300">
-                  관리 열기 →
-                </p>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-const VISIT_TONE: Record<VisitSite, string> = {
-  health: "text-emerald-700 dark:text-emerald-400",
-  liquor: "text-amber-700 dark:text-amber-400",
-  iq: "text-violet-700 dark:text-violet-400",
-  memo: "text-pink-600 dark:text-pink-400",
-};
-
-const VISIT_META: Record<VisitSite, { label: string; emoji: string }> = {
-  ...SITE_META,
-  memo: { label: "메모 (moa)", emoji: "📝" },
-};
-
-function TodayVisitCard({ visit }: { visit: TodayVisit }) {
-  const meta = VISIT_META[visit.site];
-  return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <p className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500">
-        <span className="text-base">{meta.emoji}</span>
-        {meta.label}
-      </p>
-      <p
-        className={`mt-1 text-3xl font-bold tabular-nums ${VISIT_TONE[visit.site]}`}
-      >
-        {visit.value === null ? "—" : visit.value.toLocaleString("ko-KR")}
-      </p>
-      {visit.note && (
-        <p className="mt-0.5 text-[11px] text-zinc-400">{visit.note}</p>
-      )}
-    </div>
+    </DashboardView>
   );
 }

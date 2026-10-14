@@ -23,7 +23,7 @@ export function LoginForm({ denied }: { denied?: boolean }) {
           name="email"
           autoComplete="username"
           required
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-700 dark:bg-zinc-900"
+          className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900"
         />
       </label>
 
@@ -36,7 +36,7 @@ export function LoginForm({ denied }: { denied?: boolean }) {
           name="password"
           autoComplete="current-password"
           required
-          className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-700 dark:bg-zinc-900"
+          className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900"
         />
       </label>
 
@@ -49,7 +49,7 @@ export function LoginForm({ denied }: { denied?: boolean }) {
       <button
         type="submit"
         disabled={pending}
-        className="mt-1 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+        className="mt-1 rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60"
       >
         {pending ? "로그인 중…" : "로그인"}
       </button>

@@ -103,7 +103,7 @@ export function LiquorManager({ initialRows, initialTotal, pageSize }: Props) {
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
+          className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50 dark:bg-indigo-500 dark:text-white hover:bg-indigo-500"
         >
           검색
         </button>
@@ -530,7 +530,7 @@ function PriceEntryForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
+          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50 dark:bg-indigo-500 dark:text-white hover:bg-indigo-500"
         >
           {pending ? "저장 중…" : "가격 저장"}
         </button>
@@ -768,7 +768,7 @@ function EditModal({
             <button
               type="submit"
               disabled={pending || uploading}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-zinc-900"
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50 dark:bg-indigo-500 dark:text-white hover:bg-indigo-500"
             >
               {pending ? "저장 중…" : isCreate ? "추가" : "저장"}
             </button>

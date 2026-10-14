@@ -12,8 +12,8 @@ export default async function AdminTestPage() {
   if (!(await isAdminUser())) notFound();
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 py-10 sm:px-8">
-      <h1 className="mb-1 text-2xl font-bold text-zinc-950 dark:text-zinc-100">
+    <main>
+      <h1 className="mb-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">
         테스트
       </h1>
       <p className="mb-6 text-sm leading-6 text-zinc-600 dark:text-zinc-400">

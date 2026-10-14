@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { getSupportTickets } from "@/features/health/support";
 import { SupportRefresh } from "@/features/health/components/support-forms";
+import { Badge, Card, ChipLink, EmptyState, PageHeader, buttonClass, fieldClass } from "@/components/ui/kit";
 import {
   formatSupportTime,
   SUPPORT_BASE,
@@ -16,8 +17,8 @@ import {
 export const dynamic = "force-dynamic";
 
 
-const input =
-  "rounded-lg border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-600 dark:bg-zinc-900";
+// 리뉴얼(2026-10-14): 공용 입력칸 모양. 날짜칸은 폭만 줄인다.
+const input = `${fieldClass} w-auto`;
 
 export default async function HealthSupportPage({
   searchParams,
@@ -29,32 +30,38 @@ export default async function HealthSupportPage({
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="mb-1 text-xl font-bold text-zinc-950 dark:text-zinc-100">고객센터</h1>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            미확인 {unread}건 · 전체 {total}건
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/admin/health/support/notifications"
-            rel="noreferrer"
-            className="text-sm text-zinc-600 underline dark:text-zinc-400"
-          >
-            카카오톡 알림 설정 (헬쑤앱)
-          </Link>
-          <SupportRefresh />
-        </div>
+      <PageHeader
+        title="고객센터"
+        description={<>미확인 <b className="text-zinc-900 dark:text-zinc-100">{unread}</b>건 · 전체 {total}건</>}
+        actions={
+          <>
+            <Link href="/admin/health/support/notifications" className={buttonClass("ghost", "sm")}>
+              카카오톡 알림 설정
+            </Link>
+            <SupportRefresh />
+          </>
+        }
+      />
+
+      {/* 상태 칩 — 자주 쓰는 거르기를 한 번에(나머지 조건은 아래 검색칸). */}
+      <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
+        <ChipLink href={supportPageHref({ ...filters, status: undefined }, 1)} active={!filters.status}>
+          전체
+        </ChipLink>
+        {Object.entries(SUPPORT_STATUSES).map(([k, v]) => (
+          <ChipLink key={k} href={supportPageHref({ ...filters, status: k }, 1)} active={filters.status === k}>
+            {v}
+          </ChipLink>
+        ))}
       </div>
 
-      <form className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+      <form className="mb-4 flex flex-wrap items-end gap-2 rounded-2xl border border-zinc-200/70 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
         <input
           aria-label="문의 검색"
           name="q"
           defaultValue={filters.q}
           placeholder="제목 또는 접수번호"
-          className={`${input} min-w-0 flex-1`}
+          className={`${fieldClass} min-w-40 flex-1`}
         />
         <select aria-label="상태 필터" name="status" defaultValue={filters.status ?? ""} className={input}>
           <option value="">모든 상태</option>
@@ -84,9 +91,7 @@ export default async function HealthSupportPage({
           <input name="mine" value="1" type="checkbox" defaultChecked={filters.mine === "1"} />
           내 담당
         </label>
-        <button className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900">
-          검색
-        </button>
+        <button className={buttonClass("primary")}>검색</button>
       </form>
 
       {error ? (
@@ -94,49 +99,43 @@ export default async function HealthSupportPage({
           문의 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
         </p>
       ) : tickets.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-600">
-          조건에 맞는 문의가 없습니다.
-        </p>
+        <EmptyState title="조건에 맞는 문의가 없어요" />
       ) : (
-        <ul aria-label="문의 목록" className="flex flex-col gap-2">
-          {tickets.map((t) => (
-            <li key={t.id}>
-              <Link
-                href={`${SUPPORT_BASE}/${t.id}`}
-                className="block rounded-xl border border-zinc-200 bg-white p-4 hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900"
-              >
-                <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                  <span>#{t.number}</span>
-                  <span>{SUPPORT_CATEGORIES[t.category]}</span>
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-                    {SUPPORT_STATUSES[t.status]}
+        // 받은 편지함처럼 한 상자 안에 줄로 — 안 읽은 문의는 점과 굵은 제목.
+        <Card padded={false}>
+          <ul aria-label="문의 목록" className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {tickets.map((t) => (
+              <li key={t.id}>
+                <Link href={`${SUPPORT_BASE}/${t.id}`} className="flex items-start gap-3 px-4 py-3.5 transition hover:bg-zinc-50 sm:px-5 dark:hover:bg-zinc-800/50">
+                  <span className={`mt-2 h-2 w-2 shrink-0 rounded-full ${t.admin_read_at ? "bg-transparent" : "bg-indigo-500"}`} aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className={`block break-words ${t.admin_read_at ? "font-semibold text-zinc-700 dark:text-zinc-300" : "font-extrabold text-zinc-950 dark:text-zinc-50"}`}>
+                      {t.title}
+                    </span>
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">
+                      <span className="tabular-nums">#{t.number}</span>
+                      <span>·</span>
+                      <span>{SUPPORT_CATEGORIES[t.category]}</span>
+                      <Badge tone={t.status === "new" ? "indigo" : t.status === "resolved" || t.status === "closed" ? "emerald" : "zinc"}>{SUPPORT_STATUSES[t.status]}</Badge>
+                      {t.priority !== "normal" && (
+                        <Badge tone="red">{SUPPORT_PRIORITIES[t.priority as keyof typeof SUPPORT_PRIORITIES] ?? t.priority}</Badge>
+                      )}
+                      {!t.admin_read_at && <span className="sr-only">새 소식</span>}
+                    </span>
                   </span>
-                  {t.priority !== "normal" && (
-                    <span className="rounded bg-red-100 px-1.5 text-red-700 dark:bg-red-950 dark:text-red-300">
-                      {SUPPORT_PRIORITIES[t.priority as keyof typeof SUPPORT_PRIORITIES] ?? t.priority}
-                    </span>
-                  )}
-                  {!t.admin_read_at && (
-                    <span className="rounded bg-blue-100 px-1.5 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                      새 소식
-                    </span>
-                  )}
-                </div>
-                <h2 className="mt-1 break-words font-semibold text-zinc-950 dark:text-zinc-100">
-                  {t.title}
-                </h2>
-                <p className="mt-1 text-xs text-zinc-500">{formatSupportTime(t.updated_at)}</p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                  <span className="shrink-0 text-xs text-zinc-400">{formatSupportTime(t.updated_at)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Card>
       )}
 
       <nav aria-label="문의 페이지" className="mt-4 flex items-center justify-between text-sm">
-        {page > 1 ? <Link href={supportPageHref(filters, page - 1)}>← 이전</Link> : <span />}
-        <span className="text-zinc-500">{page}페이지</span>
+        {page > 1 ? <Link className={buttonClass("secondary", "sm")} href={supportPageHref(filters, page - 1)}>← 이전</Link> : <span />}
+        <span className="text-xs font-bold text-zinc-500">{page}페이지</span>
         {page * SUPPORT_PAGE_SIZE < total ? (
-          <Link href={supportPageHref(filters, page + 1)}>다음 →</Link>
+          <Link className={buttonClass("secondary", "sm")} href={supportPageHref(filters, page + 1)}>다음 →</Link>
         ) : (
           <span />
         )}

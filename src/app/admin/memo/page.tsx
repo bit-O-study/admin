@@ -1,4 +1,6 @@
 import { getMemoStats, isMemoConfigured } from "@/features/memo/data";
+import { PageHeader } from "@/components/ui/kit";
+import { ServiceIcon } from "@/features/admin/components/service-icon";
 import { MemoChartLazy } from "@/features/memo/components/memo-chart-lazy";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +18,8 @@ export default async function MemoAdminPage() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
-      <header className="mb-6">
-        <h1 className="text-xl font-bold">📝 메모 (moa)</h1>
-        <p className="mt-1 text-sm text-zinc-500">하루 접속자 · 최근 30일</p>
-      </header>
+    <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+      <PageHeader icon={<ServiceIcon service="memo" />} title="메모 moa" description="하루 접속자 · 최근 30일 · 접속 = 그날 앱을 연 로그인 사용자" />
 
       {!stats ? (
         <p className="rounded-xl border border-dashed border-zinc-300 p-5 text-sm text-zinc-500 dark:border-zinc-700">
@@ -37,7 +36,7 @@ export default async function MemoAdminPage() {
             <Stat label="전체 사용자" value={`${stats.totals.users}명`} sub={`프로젝트 ${stats.totals.spaces} · 노트 ${stats.totals.notes}`} />
           </div>
 
-          <section className="mt-6 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <section className="mt-6 rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <h2 className="mb-1 text-sm font-bold">일별 접속자</h2>
             <p className="mb-3 text-xs text-zinc-500">
               접속자 = 그날 앱을 연 사람({stats.trackedSince} 부터 기록) · 활동한 사람 = 메시지·이슈·노트 수정을 남긴 사람 + 접속자
@@ -45,7 +44,7 @@ export default async function MemoAdminPage() {
             <MemoChartLazy days={days} />
           </section>
 
-          <section className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <section className="mt-6 overflow-x-auto rounded-2xl border border-zinc-200/70 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <table className="w-full min-w-[520px] text-sm">
               <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-800/60">
                 <tr>
@@ -76,7 +75,7 @@ export default async function MemoAdminPage() {
 
 function Stat({ label, value, sub, strong }: { label: string; value: string; sub?: string; strong?: boolean }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <p className="text-xs font-semibold text-zinc-500">{label}</p>
       <p className={`mt-1 text-2xl font-bold tabular-nums ${strong ? "text-pink-600 dark:text-pink-400" : ""}`}>{value}</p>
       {sub && <p className="mt-0.5 text-[11px] text-zinc-400">{sub}</p>}

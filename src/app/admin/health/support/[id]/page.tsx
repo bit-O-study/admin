@@ -39,7 +39,7 @@ export default async function HealthSupportDetailPage({
         <p className="text-xs text-zinc-500">
           #{t.number} · {SUPPORT_CATEGORIES[t.category]} · {SUPPORT_STATUSES[t.status]}
         </p>
-        <h1 className="mt-1 break-words text-xl font-bold text-zinc-950 dark:text-zinc-100">
+        <h1 className="mt-1 break-words text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">
           {t.title}
         </h1>
         <p className="mt-1 text-xs text-zinc-500">{formatSupportTime(t.created_at)}</p>

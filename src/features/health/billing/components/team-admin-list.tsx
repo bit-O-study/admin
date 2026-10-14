@@ -123,7 +123,7 @@ function TeamRow({ row, today }: { row: Row; today: string }) {
               type={f.type}
               value={f.value}
               onChange={(e) => f.set(e.target.value)}
-              className="h-10 w-full rounded-xl border border-zinc-300 bg-white px-2 text-sm outline-none focus:border-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              className="h-10 w-full rounded-2xl border border-zinc-300 bg-white px-2 text-sm outline-none focus:border-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             />
           </label>
         ))}
@@ -133,7 +133,7 @@ function TeamRow({ row, today }: { row: Row; today: string }) {
         value={memo}
         onChange={(e) => setMemo(e.target.value)}
         placeholder="입금 확인 메모(입금자명·계좌 등)"
-        className="mt-2 h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+        className="mt-2 h-10 w-full rounded-2xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
       />
 
       <div className="mt-3 flex gap-2">

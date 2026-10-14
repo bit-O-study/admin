@@ -25,8 +25,8 @@ export default async function AdminCronsPage() {
   const { summaries, recent, lookbackDays } = await getCronRuns();
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-10 sm:px-8">
-      <h1 className="mb-1 text-2xl font-bold text-zinc-950 dark:text-zinc-100">
+    <main>
+      <h1 className="mb-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">
         크론 실행
       </h1>
       <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
@@ -43,12 +43,12 @@ export default async function AdminCronsPage() {
         최근 실행
       </h2>
       {recent.length === 0 ? (
-        <p className="rounded-xl border border-zinc-200 bg-white px-4 py-6 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+        <p className="rounded-2xl border border-zinc-200/70 bg-white px-4 py-6 text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
           아직 기록이 없습니다. 크론이 한 번도 실행되지 않았거나, 이 기능 배포 전
           실행분입니다.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="overflow-x-auto rounded-2xl border border-zinc-200/70 bg-white dark:border-zinc-700 dark:bg-zinc-900">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <thead className="border-b border-zinc-200 text-xs text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
               <tr>

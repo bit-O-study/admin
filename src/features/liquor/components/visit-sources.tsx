@@ -14,7 +14,7 @@ export function VisitSources({ sources }: { sources: LiquorVisitSource[] | null 
     return <p className="rounded-xl border border-dashed border-zinc-300 p-4 text-sm text-zinc-500 dark:border-zinc-700">최근 30일 방문 기록이 없습니다.</p>;
   }
   return (
-    <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="overflow-x-auto rounded-2xl border border-zinc-200/70 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <table className="w-full min-w-[560px] text-sm">
         <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-800/60">
           <tr>

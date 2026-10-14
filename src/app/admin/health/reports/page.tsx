@@ -9,7 +9,7 @@ export default async function HealthReportsPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-bold text-zinc-950 dark:text-zinc-100">
+      <h1 className="mb-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">
         신고
       </h1>
       <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">

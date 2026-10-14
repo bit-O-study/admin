@@ -56,7 +56,7 @@ export function DepositInfoManager({ initial }: { initial: DepositInfo }) {
             value={form[f.k]}
             onChange={(e) => set(f.k)(e.target.value)}
             placeholder={f.ph}
-            className="h-10 w-full rounded-xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+            className="h-10 w-full rounded-2xl border border-zinc-300 bg-white px-3 text-sm outline-none focus:border-emerald-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           />
         </label>
       ))}
@@ -80,7 +80,7 @@ export function DepositInfoManager({ initial }: { initial: DepositInfo }) {
         data-testid="deposit-save"
         disabled={pending}
         onClick={save}
-        className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+        className="inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white transition hover:bg-indigo-500 disabled:opacity-50"
       >
         {pending ? <Loader2 aria-hidden="true" size={14} className="animate-spin" /> : null}
         저장

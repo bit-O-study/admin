@@ -62,7 +62,7 @@ export function PostModeratorsManager({
           type="button"
           onClick={add}
           disabled={pending || email.trim() === ""}
-          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
+          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white transition hover:bg-indigo-500 disabled:opacity-50"
         >
           {pending ? (
             <Loader2 aria-hidden="true" className="animate-spin" size={15} />

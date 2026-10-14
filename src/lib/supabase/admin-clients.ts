@@ -16,9 +16,9 @@ export const SITE_META: Record<
   SiteKey,
   { label: string; emoji: string }
 > = {
-  liquor: { label: "양주 가격조회", emoji: "🍶" },
+  liquor: { label: "위스키", emoji: "🍶" },
   iq: { label: "아이큐", emoji: "🧠" },
-  health: { label: "헬스앱", emoji: "💪" },
+  health: { label: "헬쑤", emoji: "💪" },
 };
 
 const CONFIG: Record<SiteKey, { url?: string; key?: string }> = {

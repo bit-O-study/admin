@@ -14,7 +14,7 @@ export default async function TrainerAdminPage() {
   ]);
   if (error) throw new Error("트레이너 신청 내역을 불러오지 못했어요.");
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
-  return <main className="space-y-6 p-5"><h1 className="app-title">트레이너 이용권</h1>
+  return <main className="space-y-6"><h1 className="app-title">트레이너 이용권</h1>
     <p className="text-sm text-muted">결제 확인 후 기간과 회원 수를 승인하세요. 그룹 요금제와 별도입니다.</p>
     <p className="text-sm">신청하지 않은 회원에게 넣으려면 <Link href="/admin/health/grants" className="font-semibold underline">요금제 지급</Link> 메뉴를 쓰세요.</p>
     {!(passes?.length) && <p>신청 내역이 없어요.</p>}

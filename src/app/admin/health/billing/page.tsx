@@ -23,8 +23,8 @@ export default async function AdminBillingPage() {
   const monthly = active.reduce((sum, r) => sum + r.priceKrw, 0);
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-10 sm:px-8">
-      <h1 className="mb-1 text-2xl font-bold text-zinc-950 dark:text-zinc-100">
+    <main>
+      <h1 className="mb-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">
         팀 요금제
       </h1>
       <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">

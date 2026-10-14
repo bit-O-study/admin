@@ -17,7 +17,7 @@ import {
 const MetricChart = dynamic(() => import("./metric-chart"), {
   ssr: false,
   loading: () => (
-    <div className="h-[280px] rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900" />
+    <div className="h-[280px] rounded-2xl border border-zinc-200/70 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900" />
   ),
 });
 
@@ -57,14 +57,7 @@ export function HealthDashboard({
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-zinc-950 dark:text-zinc-100">
-            💪 헬스앱 대시보드
-          </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            회원·접속 추이
-          </p>
-        </div>
+        <p className="text-sm text-zinc-500">기간</p>
         <div className="inline-flex rounded-lg border border-zinc-300 bg-white p-0.5 dark:border-zinc-600 dark:bg-zinc-800">
           {(["day", "month", "year"] as Granularity[]).map((g) => (
             <button
@@ -118,7 +111,7 @@ function StatCard({
   tone: string;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+    <div className="rounded-2xl border border-zinc-200/70 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
       <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
         {label}
       </p>

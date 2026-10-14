@@ -19,7 +19,7 @@ const TABS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[]
   { href: "/admin/health/support", label: "고객센터", icon: Headphones },
 ];
 
-export function MobileNav() {
+export function MobileNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState(false);
 
@@ -61,12 +61,17 @@ export function MobileNav() {
             href={href}
             aria-current={isOn(href, exact) ? "page" : undefined}
             className={cn(
-              "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-bold",
+              "relative flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-bold",
               isOn(href, exact) ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-500",
             )}
           >
             <Icon aria-hidden="true" size={20} />
             {label}
+            {badges[href] ? (
+              <span className="absolute top-1.5 left-1/2 ml-2 rounded-full bg-red-500 px-1.5 text-[10px] font-black leading-4 text-white">
+                {badges[href] > 99 ? "99+" : badges[href]}
+              </span>
+            ) : null}
           </Link>
         ))}
         <button
@@ -91,7 +96,7 @@ export function MobileNav() {
               </button>
             </div>
             <div className="overflow-y-auto pb-[calc(var(--safe-bottom)+12px)]">
-              <AdminNav />
+              <AdminNav badges={badges} expandAll />
             </div>
           </div>
         </div>
