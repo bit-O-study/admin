@@ -9,6 +9,7 @@ import { getActiveUsersSeries, getMembers } from "@/features/health/data";
 import { dashboardSummary } from "@/features/health/dashboard-stats";
 import { HealthDashboard } from "@/features/health/components/health-dashboard";
 import { getIqStats } from "@/features/iq/data";
+import { getMemoStats, isMemoConfigured } from "@/features/memo/data";
 import {
   getLiquorCount,
   getLiquorViewTotal,
@@ -26,9 +27,10 @@ function fmt(n: number): string {
   return n.toLocaleString("ko-KR");
 }
 
-/** 오늘 방문수 카드 데이터. value=null 이면 "—". */
+/** 오늘 방문수 카드 데이터. value=null 이면 "—". memo 는 Supabase 사이트가 아니라 SiteKey 밖에 둔다. */
+type VisitSite = SiteKey | "memo";
 type TodayVisit = {
-  site: SiteKey;
+  site: VisitSite;
   value: number | null;
   note: string | null;
 };
@@ -46,6 +48,7 @@ export default async function AdminDashboardPage() {
     liquorViews,
     liquorVisits,
     liquorToday,
+    memo,
   ] = await Promise.all([
     getMembers(),
     getActiveUsersSeries("day"),
@@ -56,6 +59,8 @@ export default async function AdminDashboardPage() {
     liquorOn ? getLiquorViewTotal() : Promise.resolve(0),
     liquorOn ? getLiquorVisitTotal() : Promise.resolve(0),
     liquorOn ? getLiquorVisitToday() : Promise.resolve(0),
+    // 오늘 숫자만 필요해서 하루치만 받는다.
+    getMemoStats(1),
   ]);
 
   const lite = members.map((m) => ({
@@ -85,6 +90,12 @@ export default async function AdminDashboardPage() {
       value: iq ? iq.todayVisits : null,
       note: iq ? null : "데이터 없음",
     },
+    {
+      // 메모 = 그날 앱을 연 로그인 사용자 수(daily_visits).
+      site: "memo",
+      value: memo ? (memo.days.at(-1)?.visitors ?? 0) : null,
+      note: memo ? "접속(로그인) 기준" : isMemoConfigured() ? "불러오지 못함" : "미설정",
+    },
   ];
 
   const STATS: Record<SiteKey, Stat[]> = {
@@ -105,7 +116,7 @@ export default async function AdminDashboardPage() {
       <header className="mb-6">
         <h1 className="text-xl font-bold">대시보드</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          세 사이트를 한 곳에서 관리합니다.
+          네 서비스를 한 곳에서 관리합니다.
         </p>
       </header>
 
@@ -115,7 +126,7 @@ export default async function AdminDashboardPage() {
           오늘 방문수{" "}
           <span className="font-normal text-zinc-400">(도메인별)</span>
         </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {todayVisits.map((v) => (
             <TodayVisitCard key={v.site} visit={v} />
           ))}
@@ -186,14 +197,20 @@ export default async function AdminDashboardPage() {
   );
 }
 
-const VISIT_TONE: Record<SiteKey, string> = {
+const VISIT_TONE: Record<VisitSite, string> = {
   health: "text-emerald-700 dark:text-emerald-400",
   liquor: "text-amber-700 dark:text-amber-400",
   iq: "text-violet-700 dark:text-violet-400",
+  memo: "text-pink-600 dark:text-pink-400",
+};
+
+const VISIT_META: Record<VisitSite, { label: string; emoji: string }> = {
+  ...SITE_META,
+  memo: { label: "메모 (moa)", emoji: "📝" },
 };
 
 function TodayVisitCard({ visit }: { visit: TodayVisit }) {
-  const meta = SITE_META[visit.site];
+  const meta = VISIT_META[visit.site];
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <p className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500">

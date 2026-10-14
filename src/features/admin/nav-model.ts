@@ -50,6 +50,13 @@ export const ADMIN_GROUPS: AdminGroup[] = [
     href: "/admin/liquor",
     links: [{ href: "/admin/liquor", label: "상품·가격 관리" }],
   },
+  {
+    // 메모 앱(moa)은 Supabase 가 아니라 자체 API 로 숫자만 받는다(features/memo/data.ts).
+    key: "memo",
+    label: "메모(moa)",
+    href: "/admin/memo",
+    links: [{ href: "/admin/memo", label: "접속 통계" }],
+  },
 ];
 
 /** 트리 안의 모든 링크 href(개요 포함) — active 판정용. */

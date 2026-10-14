@@ -7,6 +7,7 @@ import {
   Dumbbell,
   LayoutDashboard,
   LogOut,
+  NotebookPen,
   Wine,
   type LucideIcon,
 } from "lucide-react";
@@ -24,6 +25,7 @@ const GROUP_ICONS: Record<string, LucideIcon> = {
   health: Dumbbell,
   iq: Brain,
   liquor: Wine,
+  memo: NotebookPen,
 };
 
 export function AdminNav() {
