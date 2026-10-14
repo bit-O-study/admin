@@ -40,9 +40,9 @@ export function AdminNav() {
         </span>
         <div className="leading-tight">
           <p className="text-sm font-bold text-zinc-950 dark:text-zinc-100">
-            통합 관리자
+            BOadmin
           </p>
-          <p className="text-[11px] text-zinc-500">heltch admin</p>
+          <p className="text-[11px] text-zinc-500">통합 관리 콘솔</p>
         </div>
       </div>
 

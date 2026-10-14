@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "통합 관리자 · heltch admin",
-  description: "양주 가격조회 · 아이큐 · 헬스앱 통합 관리자 콘솔",
+  title: "BOadmin",
+  description: "헬쑤 · 메모(moa) · 아이큐 · 양주 가격조회 통합 관리자 콘솔",
 };
 
 export default function RootLayout({

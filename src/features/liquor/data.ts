@@ -221,3 +221,35 @@ export async function getLiquorPriceHistory(
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
+/** 유입 경로별 방문 수 — 어디서 왔나(네이버·구글·카카오톡·인스타·직접 방문 …). */
+export type LiquorVisitSource = {
+  source: string;
+  today: number;
+  last7: number;
+  total: number;
+  /** '기타'·검색 등에서 많이 온 사이트(호스트) 상위 몇 개. */
+  hosts: { host: string; total: number }[];
+};
+
+/**
+ * 최근 N일 유입 경로 집계. DB 함수 site_visit_sources 로 센다(행을 내려받지 않음).
+ * SQL(whisky_app frontend/supabase/add_site_visit_source.sql)을 아직 안 돌렸으면 null.
+ */
+export async function getLiquorVisitSources(days = 30): Promise<LiquorVisitSource[] | null> {
+  const db = adminDb("liquor");
+  const { data, error } = await db.rpc("site_visit_sources", { p_days: days });
+  if (error || !data) return null;
+  const rows = data as { source: string; referrer_host: string | null; today: number; last7: number; total: number }[];
+  const bySource = new Map<string, LiquorVisitSource>();
+  for (const r of rows) {
+    const s = bySource.get(r.source) ?? { source: r.source, today: 0, last7: 0, total: 0, hosts: [] };
+    s.today += Number(r.today);
+    s.last7 += Number(r.last7);
+    s.total += Number(r.total);
+    if (r.referrer_host) s.hosts.push({ host: r.referrer_host, total: Number(r.total) });
+    bySource.set(r.source, s);
+  }
+  return [...bySource.values()]
+    .map((s) => ({ ...s, hosts: s.hosts.sort((a, b) => b.total - a.total).slice(0, 3) }))
+    .sort((a, b) => b.total - a.total);
+}
