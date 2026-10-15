@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { isAdminUser } from "@/features/admin/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { TrainerForm } from "@/features/health/trainer/forms";
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import type { TrainerPass } from "@/features/health/trainer/types";
 export const dynamic = "force-dynamic";
 export default async function TrainerAdminPage() {

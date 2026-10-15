@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 
 import { QuestionReview } from "@/features/iq/components/question-review";
 

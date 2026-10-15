@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { AlertTriangle, ArrowRight, Flag, MessageCircle, Timer } from "lucide-react";
 import type { ReactNode } from "react";
 

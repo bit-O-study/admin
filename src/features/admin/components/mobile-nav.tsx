@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Headphones, LayoutDashboard, Menu, Users, X, type LucideIcon } from "lucide-react";

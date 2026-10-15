@@ -1,6 +1,6 @@
 import { getMembers, getMemberSubscriptions } from "@/features/health/data";
 import { banStateOf, BAN_STATE_LABEL } from "@/features/health/ban";
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 
 import { isVerificationUser } from "@/features/health/member-filter";
 import { MEMBER_PAGE_SIZE, MEMBER_VIEWS, inView, matchesMember, paginate, parseMemberView } from "@/features/health/member-list";

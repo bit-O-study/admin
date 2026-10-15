@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 
 import { listTeamSubscriptions } from "@/features/health/billing/team-store";
 import { TeamAdminList } from "@/features/health/billing/components/team-admin-list";

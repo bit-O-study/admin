@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/PendingLink";
 
 import { getSupportTickets } from "@/features/health/support";
 import { SupportRefresh } from "@/features/health/components/support-forms";
