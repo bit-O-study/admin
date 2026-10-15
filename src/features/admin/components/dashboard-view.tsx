@@ -28,10 +28,12 @@ export function DashboardView({
   actions,
   kpis,
   children,
+  serviceCards,
 }: {
   actions: ActionItems;
   kpis: Record<ServiceKey, ServiceKpi>;
   children?: ReactNode;
+  serviceCards?: Partial<Record<ServiceKey, ReactNode>>;
 }) {
   const today = new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", weekday: "short" }).format(new Date());
   const todo = [
@@ -88,7 +90,7 @@ export function DashboardView({
         <h2 id="kpi-h" className="mb-3 text-sm font-extrabold text-zinc-950 dark:text-zinc-50">오늘 접속</h2>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {SERVICE_ORDER.map((key) => (
-            <KpiCard key={key} service={key} kpi={kpis[key]} />
+            <div key={key}>{serviceCards?.[key] ?? <KpiCard service={key} kpi={kpis[key]} />}</div>
           ))}
         </div>
       </section>
@@ -98,7 +100,7 @@ export function DashboardView({
   );
 }
 
-function KpiCard({ service, kpi }: { service: ServiceKey; kpi: ServiceKpi }) {
+export function KpiCard({ service, kpi }: { service: ServiceKey; kpi: ServiceKpi }) {
   const svc = SERVICES[service];
   const delta = kpi.today !== null && kpi.yesterday != null ? kpi.today - kpi.yesterday : null;
   return (

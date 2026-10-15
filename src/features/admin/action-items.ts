@@ -3,8 +3,10 @@ import "server-only";
 import { cache } from "react";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getAppEvents } from "@/features/health/app-events";
-import { getCronRuns } from "@/features/health/cron-runs";
+import { APP_EVENT_LOOKBACK_DAYS } from "@/features/health/app-events";
+import { CRON_LOOKBACK_DAYS } from "@/features/health/cron-runs";
+import { CRON_NAMES } from "@/features/health/cron-run-model";
+import { isAdminUser } from "./admin";
 
 /**
  * 처리할 일 건수 (2026-10-14 리뉴얼).
@@ -36,16 +38,24 @@ export type ActionItems = NavCounts & {
 };
 
 export async function getActionItems(): Promise<ActionItems> {
+  if (!(await isAdminUser())) return { supportUnread: 0, reportsOpen: 0, appErrors: 0, appErrorDays: APP_EVENT_LOOKBACK_DAYS, cronIssues: 0 };
+  const db = await createSupabaseServerClient();
+  const since = (days: number) => new Date(Date.now() - days * 86400000).toISOString();
   const [counts, events, crons] = await Promise.all([
     getNavCounts(),
-    getAppEvents(1).catch(() => null),
-    getCronRuns(1).catch(() => null),
+    db.from("app_events").select("severity,count").gte("occurred_at", since(APP_EVENT_LOOKBACK_DAYS)).order("occurred_at", { ascending: false }).limit(5000),
+    db.from("cron_runs").select("name,status").gte("started_at", since(CRON_LOOKBACK_DAYS)).order("started_at", { ascending: false }).limit(3000),
   ]);
+  const latest = new Map<string, string | null>(CRON_NAMES.map(name => [name, null]));
+  const seen = new Set<string>();
+  for (const row of crons.data ?? []) {
+    if (!seen.has(row.name)) { latest.set(row.name, row.status); seen.add(row.name); }
+  }
   return {
     ...counts,
-    appErrors: events?.summary.errors ?? 0,
-    appErrorDays: events?.lookbackDays ?? 0,
-    cronIssues: crons ? crons.summaries.filter((s) => s.lastStatus === "error" || s.lastRunAt === null).length : 0,
+    appErrors: (events.data ?? []).reduce((total, row) => total + (row.severity === "error" ? (Number.isFinite(row.count) ? Math.max(1, row.count) : 1) : 0), 0),
+    appErrorDays: APP_EVENT_LOOKBACK_DAYS,
+    cronIssues: [...latest.values()].filter(status => status === null || status === "error").length,
   };
 }
 

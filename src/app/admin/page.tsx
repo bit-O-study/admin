@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { isSiteConfigured } from "@/lib/supabase/admin-clients";
 import { getActiveUsersSeries, getMembers } from "@/features/health/data";
 import { HealthDashboard } from "@/features/health/components/health-dashboard";
@@ -8,7 +9,7 @@ import {
 } from "@/features/liquor/data";
 import { getMemoStats, isMemoConfigured } from "@/features/memo/data";
 import { getActionItems } from "@/features/admin/action-items";
-import { DashboardView, type ServiceKpi } from "@/features/admin/components/dashboard-view";
+import { KpiCard, DashboardView, type ServiceKpi } from "@/features/admin/components/dashboard-view";
 import type { ServiceKey } from "@/features/admin/services";
 
 export const dynamic = "force-dynamic";
@@ -20,14 +21,11 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage() {
   const liquorOn = isSiteConfigured("liquor");
 
-  const [actions, members, day, month, year, iq, memo, liquorToday, liquorTotal] = await Promise.all([
+  const [actions, members, day, iq, liquorToday, liquorTotal] = await Promise.all([
     getActionItems(),
     getMembers(),
     getActiveUsersSeries("day"),
-    getActiveUsersSeries("month"),
-    getActiveUsersSeries("year"),
     getIqStats(),
-    getMemoStats(30),
     liquorOn ? getLiquorVisitToday() : Promise.resolve(null),
     liquorOn ? getLiquorVisitTotal() : Promise.resolve(null),
   ]);
@@ -35,7 +33,7 @@ export default async function AdminDashboardPage() {
   const lite = members.map((m) => ({ createdAt: m.createdAt, withdrawnAt: m.withdrawnAt }));
   // 헬쑤 = 로그인 기반이라 '방문 ≈ 접속' — admin_active_users 일별 값.
   const healthDays = day.slice(-30).map((d) => d.users);
-  const memoDays = memo?.days ?? [];
+
 
   const kpis: Record<ServiceKey, ServiceKpi> = {
     health: {
@@ -46,15 +44,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/health/members",
       extra: [{ label: "총 회원", value: `${lite.filter((m) => !m.withdrawnAt).length.toLocaleString("ko-KR")}명` }],
     },
-    memo: {
-      label: "로그인 접속",
-      today: memo ? (memoDays.at(-1)?.visitors ?? 0) : null,
-      yesterday: memo && memoDays.length > 1 ? memoDays[memoDays.length - 2].visitors : null,
-      spark: memoDays.map((d) => d.visitors),
-      href: "/admin/memo",
-      note: memo ? undefined : isMemoConfigured() ? "불러오지 못함" : "미설정",
-      extra: memo ? [{ label: "전체 사용자", value: `${memo.totals.users}명` }] : undefined,
-    },
+    memo: { label: "로그인 접속", today: null, href: "/admin/memo", note: "불러오는 중…" },
     iq: {
       label: "방문",
       today: iq ? iq.todayVisits : null,
@@ -72,11 +62,21 @@ export default async function AdminDashboardPage() {
   };
 
   return (
-    <DashboardView actions={actions} kpis={kpis}>
+    <DashboardView actions={actions} kpis={kpis} serviceCards={{ memo: <Suspense fallback={<KpiCard service="memo" kpi={kpis.memo} />}><MemoCard /></Suspense> }}>
       <section>
         <h2 className="mb-3 text-sm font-extrabold text-zinc-950 dark:text-zinc-50">헬쑤 회원·접속 추이</h2>
-        <HealthDashboard members={lite} active={{ day, month, year }} />
+        <Suspense fallback={<p role="status" className="p-4 text-sm text-zinc-500">접속 추이를 불러오는 중…</p>}><HealthCharts members={lite} day={day} /></Suspense>
       </section>
     </DashboardView>
   );
+}
+
+async function MemoCard() {
+  const memo = await getMemoStats(30);
+  const days = memo?.days ?? [];
+  return <KpiCard service="memo" kpi={{ label: "로그인 접속", today: memo ? (days.at(-1)?.visitors ?? 0) : null, yesterday: memo && days.length > 1 ? days[days.length - 2].visitors : null, spark: days.map(d => d.visitors), href: "/admin/memo", note: memo ? undefined : isMemoConfigured() ? "불러오지 못함" : "미설정", extra: memo ? [{ label: "전체 사용자", value: `${memo.totals.users}명` }] : undefined }} />;
+}
+async function HealthCharts({ members, day }: { members: { createdAt: string; withdrawnAt: string | null }[]; day: Awaited<ReturnType<typeof getActiveUsersSeries>> }) {
+  const [month, year] = await Promise.all([getActiveUsersSeries("month"), getActiveUsersSeries("year")]);
+  return <HealthDashboard members={members} active={{ day, month, year }} />;
 }
