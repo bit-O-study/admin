@@ -25,8 +25,10 @@ body {
   :root { --admin-line: #3f3f46; --admin-muted: #a1a1aa; }
 }
 @layer components {
+  .admin-buffering { animation: admin-buffering-appear 0s .18s both; }
   .app-card { @apply rounded-2xl border border-zinc-200/70 bg-white shadow-[0_1px_2px_rgba(18,21,40,.04),0_4px_16px_rgba(18,21,40,.04)] dark:border-zinc-800 dark:bg-zinc-900; }
   .app-title { @apply text-xl font-black tracking-tight sm:text-2xl; }
   .app-page { @apply space-y-5; }
   .app-container { @apply mx-auto w-full max-w-4xl; }
 }
+@keyframes admin-buffering-appear { from { opacity: 0; } to { opacity: 1; } }

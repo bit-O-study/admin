@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Buffering } from "@/components/Buffering";
 import { CornerDownLeft, Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ type Entry = { href: string; label: string; group: string; dot?: string };
  */
 export function TopBar() {
   const router = useRouter();
+  const [pending, startNavigation] = useTransition();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [cursor, setCursor] = useState(0);
@@ -39,6 +41,8 @@ export function TopBar() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
+        setQ("");
+        setCursor(0);
         setOpen((v) => !v);
       }
       if (e.key === "Escape") setOpen(false);
@@ -48,23 +52,23 @@ export function TopBar() {
   }, []);
   useEffect(() => {
     if (open) {
-      setQ("");
-      setCursor(0);
-      setTimeout(() => input.current?.focus(), 0);
+      const timer = setTimeout(() => input.current?.focus(), 0);
+      return () => clearTimeout(timer);
     }
   }, [open]);
 
   const go = (href: string) => {
     setOpen(false);
-    router.push(href);
+    startNavigation(() => router.push(href));
   };
 
   return (
     <>
+      {pending && <Buffering overlay />}
       <div className="sticky top-0 z-20 hidden h-14 items-center gap-3 border-b border-zinc-200/70 bg-white/80 px-6 backdrop-blur lg:flex dark:border-zinc-800 dark:bg-zinc-900/80">
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => { setQ(""); setCursor(0); setOpen(true); }}
           className="flex h-9 w-80 items-center gap-2 rounded-xl bg-zinc-100 px-3 text-[13px] text-zinc-500 transition hover:bg-zinc-200/70 dark:bg-zinc-800 dark:hover:bg-zinc-700"
         >
           <Search size={15} aria-hidden="true" />
