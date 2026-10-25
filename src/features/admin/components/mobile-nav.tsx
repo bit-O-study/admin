@@ -21,10 +21,13 @@ const TABS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[]
 
 export function MobileNav({ badges = {} }: { badges?: Record<string, number> }) {
   const pathname = usePathname() ?? "";
+  // 경로가 바뀌면 메뉴 상태와 스크롤 잠금을 함께 초기화한다.
+  return <MobileNavContent key={pathname} pathname={pathname} badges={badges} />;
+}
+
+function MobileNavContent({ pathname, badges }: { pathname: string; badges: Record<string, number> }) {
   const [open, setOpen] = useState(false);
 
-  // 메뉴에서 페이지를 고르면 시트를 닫는다.
-  useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);

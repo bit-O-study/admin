@@ -1,0 +1,9 @@
+[
+  {"name":"health_app","port":4100,"app":".","kind":"next","user":"bito_health"},
+  {"name":"admin","port":4101,"app":".","kind":"next","user":"bito_admin"},
+  {"name":"trip","port":4102,"app":".","kind":"next","user":"bito_trip"},
+  {"name":"whisky_app","port":4103,"app":"frontend","kind":"next","user":"bito_whisky"},
+  {"name":"accountBook","port":4104,"app":".","kind":"next","user":"bito_account"},
+  {"name":"MeetingMinutes","port":4105,"app":".","kind":"next","user":"bito_meeting"},
+  {"name":"ticket","port":4106,"app":".","kind":"extension","user":"bito_ticket"}
+]

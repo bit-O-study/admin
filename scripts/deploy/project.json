@@ -1,0 +1,7 @@
+{
+  "name": "admin",
+  "port": 4101,
+  "app": ".",
+  "kind": "next",
+  "user": "bito_admin"
+}

@@ -2,7 +2,7 @@ import Link from "@/components/PendingLink";
 import { AlertTriangle, ArrowRight, Flag, MessageCircle, Timer } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Card, CardTitle } from "@/components/ui/kit";
+import { Card } from "@/components/ui/kit";
 import { cn } from "@/lib/utils";
 import { SERVICES, SERVICE_ORDER, type ServiceKey } from "@/features/admin/services";
 import type { ActionItems } from "@/features/admin/action-items";
