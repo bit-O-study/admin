@@ -24,6 +24,14 @@ jobs:
         env:
           BUILD_PUBLIC_ENV: ${{ vars.BUILD_PUBLIC_ENV }}
         run: node scripts/deploy/build-release.cjs
+      - name: Verify server management regressions
+        run: |
+          node --test ops/windows/test-control-agent.cjs ops/windows/test-deployment-status.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node ops/windows/test-supervisor.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node ops/windows/test-control-ast.cjs
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
         with:
           name: windows-release

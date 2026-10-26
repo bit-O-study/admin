@@ -5,6 +5,9 @@ const {parseEnv}=require('node:util');
 const root=path.resolve(process.argv[2]);
 const config=JSON.parse(fs.readFileSync(path.join(root,'config.json'),'utf8').replace(/^\uFEFF/,''));
 let child,active,closing=false;
+let desired='on';
+const heartbeat=setInterval(()=>{try{write('supervisor-status.json',{version:1,checkedAt:new Date().toISOString(),desired,pid:child?.pid||null})}catch(e){log('Heartbeat write failed: '+e.code)}},3000);
+heartbeat.unref();
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 function read(name){try{return JSON.parse(fs.readFileSync(path.join(root,name),'utf8').replace(/^\uFEFF/,''))}catch{return null}}
 function write(name,data){const f=path.join(root,name);fs.writeFileSync(f+'.tmp',JSON.stringify(data));fs.renameSync(f+'.tmp',f)}
@@ -32,18 +35,22 @@ async function start(sha){
 function health(port,url){return new Promise(resolve=>{const q=http.get({hostname:'127.0.0.1',port,path:url,timeout:3000},r=>{r.resume();resolve(r.statusCode>=200&&r.statusCode<400)});q.on('error',()=>resolve(false));q.on('timeout',()=>q.destroy())})}
 async function apply(request){
  const previous=active;
+ let activationStarted=false;
  try{
   const dir=release(request.sha);
   const manifest=JSON.parse(fs.readFileSync(path.join(dir,'release.json'),'utf8'));
   if(manifest.sha!==request.sha||manifest.project!==config.name)throw Error('Artifact identity mismatch');
   // Only initialize a new database. Existing financial data is never overwritten.
   if(config.name==='accountBook'&&!fs.existsSync(path.join(root,'data','app.db')))fs.copyFileSync(path.join(dir,'initial.db'),path.join(root,'data','app.db'),fs.constants.COPYFILE_EXCL);
+  activationStarted=true;
   await stop();await start(request.sha);active=request.sha;
   write('current.json',{sha:active,previous,updatedAt:new Date().toISOString()});
   write('result.json',{id:request.id,sha:active,ok:true});log('Activated '+active);
  }catch(e){
-  await stop().catch(()=>{});
-  if(previous)await start(previous).catch(()=>log('Rollback startup failed'));
+  if(activationStarted){
+   await stop().catch(()=>{});
+   if(previous)await start(previous).catch(()=>log('Rollback startup failed'));
+  }
   write('result.json',{id:request.id,sha:request.sha,ok:false,error:e.message});log('Deployment rejected: '+e.message);
  }
 }
@@ -58,11 +65,22 @@ async function main(){
   if(command.includes(target.toLowerCase())){try{process.kill(orphan.pid)}catch{}await pause(1000)}
  }
  active=read('current.json')?.sha;
- if(active)await start(active).catch(e=>log(e.message));
+ desired=read('control.json')?.action==='off'?'off':'on';
+ if(active&&desired==='on')await start(active).catch(e=>log(e.message));
  while(!closing){
+  const control=read('control.json'),controlResult=read('control-result.json');
+  if(control&&control.id!==controlResult?.id&&['on','off'].includes(control.action)){
+   desired=control.action;
+   try{
+    if(desired==='off')await stop();
+    else if(!active)throw Error('No active release');
+    else if(!child||child.exitCode!==null||child.signalCode!==null){await stop();await start(active)}
+    write('control-result.json',{id:control.id,ok:true,action:desired,finishedAt:new Date().toISOString()});
+   }catch(e){write('control-result.json',{id:control.id,ok:false,action:desired,error:e.message,finishedAt:new Date().toISOString()})}
+  }
   const req=read('request.json'),result=read('result.json');
-  if(req&&req.id!==result?.id)await apply(req);
-  else if(active&&(!child||(child.exitCode!==null||child.signalCode!==null))){await stop().catch(()=>{});await start(active).catch(e=>log(e.message));await pause(5000)}
+  if(desired==='on'&&req&&req.id!==result?.id)await apply(req);
+  else if(desired==='on'&&active&&(!child||(child.exitCode!==null||child.signalCode!==null))){await stop().catch(()=>{});await start(active).catch(e=>log(e.message));await pause(5000)}
   await pause(1000);
  }
 }

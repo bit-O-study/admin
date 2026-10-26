@@ -1,0 +1,35 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
+const { createAgent } = require('./control-agent.cjs');
+
+test('agent protects commands, validates inventory and records pending requests without executing shell input', async t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bito-agent-test-'));
+  const token = 'test-only-token-'.repeat(4);
+  fs.writeFileSync(path.join(root, 'current.json'), JSON.stringify({ sha: 'a'.repeat(40) }));
+  fs.writeFileSync(path.join(root, 'supervisor-status.json'), JSON.stringify({ version: 1, checkedAt: new Date().toISOString() }));
+  const server = createAgent({ inventory: [{ name: 'fixture', root, port: 1 }, { name: 'admin', root, port: 1 }], token, auditPath: path.join(root, 'audit.jsonl'), deploymentMonitor: () => ({ local: { state: 'unknown' }, ci: { state: 'unavailable' } }) });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const post = (body, extra = {}) => fetch(url + '/control', { method: 'POST', headers: { Authorization: 'Bearer ' + token, ...extra }, body: JSON.stringify(body) });
+  assert.equal((await fetch(url + '/status')).status, 401);
+  assert.equal((await post({ project: 'fixture', action: 'off', actor: 'admin@example.test' }, { Origin: 'http://evil.example' })).status, 403);
+  for (const project of ['../escape', 'unknown', 'fixture;shutdown']) assert.equal((await post({ project, action: 'off', actor: 'admin@example.test' })).status, 400);
+  assert.equal((await post({ project: 'fixture', action: 'restart', actor: 'admin@example.test' })).status, 400);
+  assert.equal((await post({ project: 'admin', action: 'off', actor: 'admin@example.test' })).status, 409);
+  assert.equal((await post({ project: 'fixture', action: 'off', actor: 'admin@example.test' })).status, 202);
+  assert.equal((await post({ project: 'fixture', action: 'on', actor: 'admin@example.test' })).status, 409);
+  const status = await (await fetch(url + '/status', { headers: { Authorization: 'Bearer ' + token } })).json();
+  assert.equal(status.projects[0].pending, true);
+  assert.equal(status.projects[0].desired, 'off');
+  assert.equal(status.projects[1].controllable, false);
+  assert.equal(status.memory.total > 0, true);
+  assert.equal(JSON.stringify(status).includes(token), false);
+  assert.equal(JSON.stringify(status).includes(root), false);
+  assert.equal(fs.readFileSync(path.join(root, 'audit.jsonl'), 'utf8').includes('admin@example.test'), true);
+  fs.writeFileSync(path.join(root, 'supervisor-status.json'), JSON.stringify({ version: 1, checkedAt: '2000-01-01T00:00:00Z' }));
+  assert.equal((await post({ project: 'fixture', action: 'off', actor: 'admin@example.test' })).status, 409);
+});

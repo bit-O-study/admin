@@ -33,3 +33,14 @@ export const isPostModerator = cache(async (): Promise<boolean> => {
   if (error) return false;
   return data === true;
 });
+
+/** Server management checks authorization on every page/API request. */
+export async function requireAdmin(): Promise<void> {
+  if (!(await isAdminUser())) throw new Error("관리자만 볼 수 있어요.");
+}
+
+export const getCurrentAdminEmail = cache(async (): Promise<string | null> => {
+  if (!(await isAdminUser())) return null;
+  const user = await getCurrentUser();
+  return user?.email?.trim().toLowerCase() ?? null;
+});
