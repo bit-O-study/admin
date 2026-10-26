@@ -32,18 +32,22 @@ async function start(sha){
 function health(port,url){return new Promise(resolve=>{const q=http.get({hostname:'127.0.0.1',port,path:url,timeout:3000},r=>{r.resume();resolve(r.statusCode>=200&&r.statusCode<400)});q.on('error',()=>resolve(false));q.on('timeout',()=>q.destroy())})}
 async function apply(request){
  const previous=active;
+ let activationStarted=false;
  try{
   const dir=release(request.sha);
   const manifest=JSON.parse(fs.readFileSync(path.join(dir,'release.json'),'utf8'));
   if(manifest.sha!==request.sha||manifest.project!==config.name)throw Error('Artifact identity mismatch');
   // Only initialize a new database. Existing financial data is never overwritten.
   if(config.name==='accountBook'&&!fs.existsSync(path.join(root,'data','app.db')))fs.copyFileSync(path.join(dir,'initial.db'),path.join(root,'data','app.db'),fs.constants.COPYFILE_EXCL);
+  activationStarted=true;
   await stop();await start(request.sha);active=request.sha;
   write('current.json',{sha:active,previous,updatedAt:new Date().toISOString()});
   write('result.json',{id:request.id,sha:active,ok:true});log('Activated '+active);
  }catch(e){
-  await stop().catch(()=>{});
-  if(previous)await start(previous).catch(()=>log('Rollback startup failed'));
+  if(activationStarted){
+   await stop().catch(()=>{});
+   if(previous)await start(previous).catch(()=>log('Rollback startup failed'));
+  }
   write('result.json',{id:request.id,sha:request.sha,ok:false,error:e.message});log('Deployment rejected: '+e.message);
  }
 }

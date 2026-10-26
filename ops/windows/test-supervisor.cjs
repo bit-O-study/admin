@@ -20,7 +20,14 @@ async function deploy(id,sha){fs.writeFileSync(path.join(root,'request.json'),JS
  const failed=await deploy('bad',bad);assert.equal(failed.ok,false);assert.equal(failed.error,'Application exited during startup');
  assert.equal(JSON.parse(fs.readFileSync(path.join(root,'current.json'))).sha,good);
  assert.equal(await (await fetch('http://127.0.0.1:'+port)).text(),'good');
+ const activePid=fs.readFileSync(path.join(root,'fixture.pid'),'utf8');
  assert.equal((await deploy('traversal','../escape')).ok,false);
+ assert.equal(fs.readFileSync(path.join(root,'fixture.pid'),'utf8'),activePid,'Invalid release must not restart the healthy application');
+ const mismatch='c'.repeat(40),mismatchDir=path.join(root,'releases',mismatch);
+ fs.mkdirSync(mismatchDir);
+ fs.writeFileSync(path.join(mismatchDir,'release.json'),JSON.stringify({project:'other',sha:mismatch}));
+ assert.equal((await deploy('mismatch',mismatch)).ok,false);
+ assert.equal(fs.readFileSync(path.join(root,'fixture.pid'),'utf8'),activePid,'Artifact mismatch must not restart the healthy application');
  assert.equal(await (await fetch('http://127.0.0.1:'+port)).text(),'good');
- console.log('PASS: promotion, failed-start rollback, traversal rejection, previous app availability');
+ console.log('PASS: promotion, failed-start rollback, invalid release rejection without restart, previous app availability');
 })().catch(e=>{console.error(e.message);process.exitCode=1}).finally(()=>{supervisor.kill();try{process.kill(Number(fs.readFileSync(path.join(root,'fixture.pid'))))}catch{}});
