@@ -1,0 +1,10 @@
+[
+  {"name":"health_app","root":"C:/services/Bit-O/health_app","port":4100,"healthPath":"/","task":"BitO-App-health_app","manifest":"current.json","workflow":"windows-server.yml"},
+  {"name":"admin","root":"C:/services/Bit-O/admin","port":4101,"healthPath":"/login","task":"BitO-App-admin","manifest":"current.json","workflow":"windows-server.yml"},
+  {"name":"trip","root":"C:/services/Bit-O/trip","port":4102,"healthPath":"/login","task":"BitO-App-trip","manifest":"current.json","workflow":"windows-server.yml"},
+  {"name":"whisky_app","root":"C:/services/Bit-O/whisky_app","port":4103,"healthPath":"/","task":"BitO-App-whisky_app","manifest":"current.json","workflow":"windows-server.yml"},
+  {"name":"accountBook","root":"C:/services/Bit-O/accountBook","port":4104,"healthPath":"/","task":"BitO-App-accountBook","manifest":"current.json","workflow":"windows-server.yml"},
+  {"name":"MeetingMinutes","root":"C:/services/Bit-O/MeetingMinutes","port":4105,"healthPath":"/login","task":"BitO-App-MeetingMinutes","manifest":"current.json","workflow":"windows-server.yml"},
+  {"name":"ticket","root":"C:/services/Bit-O/ticket","port":4106,"healthPath":"/","task":"BitO-App-ticket","manifest":"current.json","workflow":"windows-server.yml"},
+  {"name":"ast","root":"C:/ast","port":8787,"healthPath":"/","task":"AST-Paper-Trader","manifest":"release.json","workflow":"ast.yml"}
+]
