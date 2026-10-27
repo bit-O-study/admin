@@ -41,7 +41,8 @@ export function StatusPill({ level, label, problems, checkedAt }: { level: Level
         <span className="sr-only sm:hidden">서비스 상태: {label}</span>
       </button>
       {open && (
-        <div role="dialog" aria-label="상태 요약" className="absolute top-10 right-0 z-40 w-80 overflow-hidden rounded-lg border border-line bg-surface shadow-[0_8px_30px_rgba(0,0,0,.12)]">
+        // 폰에서는 버튼 오른쪽 끝 기준 w-80 이 화면 왼쪽 밖으로 잘렸다 — 좁은 화면은 헤더 아래 화면 폭으로 연다.
+        <div role="dialog" aria-label="상태 요약" className="fixed inset-x-3 top-14 z-40 overflow-hidden sm:absolute sm:inset-x-auto sm:top-10 sm:right-0 sm:w-80 rounded-lg border border-line bg-surface shadow-[0_8px_30px_rgba(0,0,0,.12)]">
           <div className="flex items-center justify-between border-b border-line px-3.5 py-2.5">
             <p className="text-[13.5px] font-semibold">상태 요약</p>
             <span className="font-mono text-[11.5px] text-zinc-500">{time} 확인</span>
