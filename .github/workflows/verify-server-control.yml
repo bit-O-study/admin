@@ -1,0 +1,19 @@
+name: Verify live server control
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: server-control-verification
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.ref == 'refs/heads/main' && github.repository == 'bit-O-study/admin'
+    runs-on: [self-hosted, Windows, X64, bito-admin]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify authenticated server status without process controls
+        run: node ops/windows/verify-live-server.cjs
