@@ -16,4 +16,5 @@ jobs:
         with:
           persist-credentials: false
       - name: Verify authenticated server status without process controls
+        shell: cmd
         run: node ops/windows/verify-live-server.cjs
