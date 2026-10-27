@@ -14,11 +14,11 @@ export default async function TrainerAdminPage() {
   ]);
   if (error) throw new Error("트레이너 신청 내역을 불러오지 못했어요.");
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
-  return <main className="space-y-6"><h1 className="app-title">트레이너 이용권</h1>
+  return <main className="min-w-0 space-y-6"><h1 className="app-title">트레이너 이용권</h1>
     <p className="text-sm text-muted">결제 확인 후 기간과 회원 수를 승인하세요. 그룹 요금제와 별도입니다.</p>
     <p className="text-sm">신청하지 않은 회원에게 넣으려면 <Link href="/admin/health/grants" className="font-semibold underline">요금제 지급</Link> 메뉴를 쓰세요.</p>
     {!(passes?.length) && <p>신청 내역이 없어요.</p>}
-    {(passes as TrainerPass[] ?? []).map(pass => <section key={pass.trainer_id} className="app-card space-y-3 p-5"><h2 className="font-semibold">{pass.name} · {pass.phone}</h2><p className="text-sm">{pass.status === "requested" ? "승인 대기" : pass.status === "active" ? "승인됨" : "해지됨"}</p>
+    {(passes as TrainerPass[] ?? []).map(pass => <section key={pass.trainer_id} className="app-card min-w-0 space-y-3 p-5"><h2 className="font-semibold break-all">{pass.name} · {pass.phone}</h2><p className="text-sm">{pass.status === "requested" ? "승인 대기" : pass.status === "active" ? "승인됨" : "해지됨"}</p>
       <TrainerForm intent="approve" label="기간 승인·변경"><input type="hidden" name="trainer" value={pass.trainer_id} />
         <div className="grid gap-3 sm:grid-cols-3"><label className="text-sm">시작일<input type="date" name="start" required defaultValue={pass.starts_on ?? today} className="block min-h-11 w-full rounded-lg border border-line px-2" /></label>
         <label className="text-sm">종료일{pass.ends_on === "infinity" ? <><span className="block min-h-11 py-2">무제한</span><input type="hidden" name="end" value="infinity" /></> : <input type="date" name="end" required defaultValue={pass.ends_on ?? today} className="block min-h-11 w-full rounded-lg border border-line px-2" />}</label>

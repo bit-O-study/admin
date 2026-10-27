@@ -27,7 +27,8 @@ export default async function AdminLayout({
       <Suspense fallback={<AppHeader />}><Header /></Suspense>
       <Suspense fallback={<MobileNav />}><MobileTabs /></Suspense>
       <CommandPalette />
-      <div className="min-w-0 pb-[calc(var(--safe-bottom)+64px)] lg:pb-0">{children}</div>
+      {/* 긴 메일·이름 같은 줄바꿈 없는 글자가 본문을 가로로 밀면 고정 대화상자 위치가 어긋난다 — 본문 가로 넘침은 잘라 둔다. */}
+      <div className="min-w-0 overflow-x-clip pb-[calc(var(--safe-bottom)+64px)] lg:pb-0">{children}</div>
     </div>
   );
 }
