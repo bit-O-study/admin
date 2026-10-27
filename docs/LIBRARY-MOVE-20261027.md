@@ -5,3 +5,5 @@
 관리자 페이지의 모아 자료실 바로가기를 제거하고 프로젝트 선택·APK/AAB/APKS/ZIP 업로드 폼을 추가했다. 관리자 인증/동일 출처 검사 이후 서명 티켓을 발급받아 서버 디스크에 직접 업로드한다. 기존 리뷰·다운로드 경로는 유지한다. main 자동 APK는 모아 CI가 등록하며 이 목록에서 버전·커밋·등록 시각을 확인한다.
 
 검증: production build 통과. 운영 통합 검증은 모아 저장소 배포 후 수행한다.
+
+운영 검증 완료: 최신 관리자 main 화면 개편과 충돌을 해결해 보존하고 production build를 다시 통과했다. 커밋 f950bcf의 [Windows 배포 실행](https://github.com/bit-O-study/admin/actions/runs/40518993289) build/deploy success. 운영 브라우저에서 관리자가 실제 APK 파일을 업로드·다운로드하고 SHA-256 일치를 확인했다. 사진 첨부도 중앙 목록에 표시되며 390px 모바일 화면 가로 넘침이 없다. 테스트 계정과 프로젝트·파일은 서버 디스크까지 정리했다. 모아 자동 APK moa-1.1.7-d490fae.apk는 실제 publish job이 등록했다.
