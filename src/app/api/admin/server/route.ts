@@ -18,7 +18,16 @@ export async function POST(request: Request) {
   const actor = await getCurrentAdminEmail();
   if (!actor) return json({ error: '관리자만 사용할 수 있습니다.' }, 403);
   // Same-origin only: session cookies alone must never authorize a cross-site command.
-  if (request.headers.get('origin') !== new URL(request.url).origin || !request.headers.get('content-type')?.startsWith('application/json')) {
+  let sameOrigin = false;
+  try {
+    const origin = new URL(request.headers.get('origin') || '');
+    const internal = new URL(request.url);
+    // Standalone Next.js can reconstruct request.url with its 0.0.0.0 bind host.
+    // Host is the browser's actual destination; never trust forwarded-host here.
+    const host = request.headers.get('host')?.toLowerCase() || internal.host;
+    sameOrigin = origin.host === host && origin.protocol === internal.protocol && origin.origin === request.headers.get('origin');
+  } catch { /* Missing or malformed origins are rejected. */ }
+  if (!sameOrigin || !request.headers.get('content-type')?.startsWith('application/json')) {
     return json({ error: '허용되지 않은 요청입니다.' }, 403);
   }
   let input;

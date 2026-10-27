@@ -33,4 +33,14 @@ describe('server control API', () => {
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ error: '서버 관리 연결이 아직 설정되지 않았습니다.' });
   });
+  it('accepts the real Host when standalone Next uses an internal bind URL', async () => {
+    mocks.agent.mockResolvedValue(Response.json({ id: 'request-2' }, { status: 202 }));
+    const request = new Request('http://0.0.0.0:4101/api/admin/server', { method: 'POST', headers: { Host: '192.168.219.183:4101', Origin: 'http://192.168.219.183:4101', 'Content-Type': 'application/json' }, body: JSON.stringify({ project: 'trip', action: 'on' }) });
+    expect((await POST(request)).status).toBe(202);
+  });
+  it('does not trust a forged forwarded-host header', async () => {
+    const request = new Request('http://0.0.0.0:4101/api/admin/server', { method: 'POST', headers: { Host: '192.168.219.183:4101', Origin: 'http://attacker.example', 'X-Forwarded-Host': 'attacker.example', 'Content-Type': 'application/json' }, body: JSON.stringify({ project: 'trip', action: 'off' }) });
+    expect((await POST(request)).status).toBe(403);
+    expect(mocks.agent).not.toHaveBeenCalled();
+  });
 });
