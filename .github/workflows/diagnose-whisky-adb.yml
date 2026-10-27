@@ -1,0 +1,19 @@
+name: Diagnose Whisky ADB (read only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: whisky-adb-diagnostic
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    if: github.ref == 'refs/heads/main' && github.repository == 'bit-O-study/admin'
+    runs-on: [self-hosted, Windows, X64, bito-admin]
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read existing ADB daemon and scheduled task status
+        run: node ops/windows/diagnose-whisky-adb.cjs
