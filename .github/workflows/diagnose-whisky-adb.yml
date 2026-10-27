@@ -16,4 +16,5 @@ jobs:
         with:
           persist-credentials: false
       - name: Read existing ADB daemon and scheduled task status
+        shell: cmd
         run: node ops/windows/diagnose-whisky-adb.cjs
