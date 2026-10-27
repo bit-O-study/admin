@@ -19,7 +19,7 @@
 
 ## Validation
 
-Run `node --test ops/windows/test-control-agent.cjs`, `node ops/windows/test-supervisor.cjs`, and `node ops/windows/test-control-ast.cjs`. The AST suite mocks all task and trading API operations. `node ops/windows/verify-server-ui.mjs` verifies the actual dashboard component with fixture API responses at desktop and mobile sizes. These use temporary fixture directories and a fixture HTTP process; they never stop a real project. The agent test covers authentication, browser/invalid commands, allowlist, audit, pending commands and stale supervision. The supervisor test includes the existing release regressions plus persistent OFF, deployment deferral and ON recovery.
+Run `node --test ops/windows/test-control-agent.cjs`, `node ops/windows/test-supervisor.cjs`, `node ops/windows/test-control-ast.cjs`, and `node ops/windows/test-deploy.cjs`. The deploy suite runs a temp-root copy of `deploy.ps1` and checks that redeploying the active SHA exits successfully without an activation request, while an existing inactive release is still rejected. The AST suite mocks all task and trading API operations. `node ops/windows/verify-server-ui.mjs` verifies the actual dashboard component with fixture API responses at desktop and mobile sizes. These use temporary fixture directories and a fixture HTTP process; they never stop a real project. The agent test covers authentication, browser/invalid commands, allowlist, audit, pending commands and stale supervision. The supervisor test includes the existing release regressions plus persistent OFF, deployment deferral and ON recovery.
 
 ## Deployment reporting
 
