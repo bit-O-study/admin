@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/use-confirm";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import {
@@ -28,7 +29,10 @@ export function DebugAccountsManager({ accounts }: { accounts: string[] }) {
     });
   }
 
-  function remove(e: string) {
+  // 2026-10-27: 삭제 전에 확인(예전엔 누르면 바로 삭제).
+  const [confirmDialog, ask] = useConfirm();
+  async function remove(e: string) {
+    if (!(await ask({ title: "디버그 계정 해제", message: `${e} 계정을 디버그 계정에서 뺄까요?`, confirmLabel: "해제", tone: "danger" }))) return;
     setError(null);
     start(async () => {
       const res = await removeDebugAccountAction(e);
@@ -39,6 +43,7 @@ export function DebugAccountsManager({ accounts }: { accounts: string[] }) {
 
   return (
     <div className="space-y-4">
+      {confirmDialog}
       <div className="flex items-center gap-2">
         <input
           aria-label="디버그 계정 이메일"

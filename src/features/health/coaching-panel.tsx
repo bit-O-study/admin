@@ -1,6 +1,7 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/use-confirm";
 import { prepareCoaching, saveCoaching } from "./coaching-actions";
 
 export type CoachingRow = { id: string; user_id: string; kind: string; for_date: string; question: string; context: unknown; answer: string | null; draft: string };
@@ -13,7 +14,10 @@ function Editor({ row }: { row: CoachingRow }) {
   const [body, setBody] = useState(row.draft || row.answer || "");
   const [msg, setMsg] = useState("");
   const [pending, start] = useTransition();
-  function save(publish: boolean) {
+  // 2026-10-27: 전달은 회원에게 바로 보이므로 확인을 거친다.
+  const [confirmDialog, ask] = useConfirm();
+  async function save(publish: boolean) {
+    if (publish && !(await ask({ title: "회원에게 전달", message: "검토를 마친 답변을 회원 상담함에 바로 보냅니다. 전달 후에는 고칠 수 없어요.", confirmLabel: "전달" }))) return;
     start(async () => {
       try {
         const result = await saveCoaching(row.id, body, publish);
@@ -23,6 +27,7 @@ function Editor({ row }: { row: CoachingRow }) {
     });
   }
   return <article className="space-y-3 rounded-xl border p-4">
+    {confirmDialog}
     <h2 className="font-semibold">{labels[row.kind]} · {row.for_date} · {row.answer ? "전달 완료" : "답변 대기"}</h2>
     <p className="break-all text-xs text-zinc-500">회원: {row.user_id}</p>
     <p className="whitespace-pre-wrap break-words">{row.question || "운영자가 작성하는 정기 코칭"}</p>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/use-confirm";
 import { Loader2 } from "lucide-react";
 
 import {
@@ -54,8 +55,11 @@ function TeamRow({ row, today }: { row: Row; today: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, run] = useTransition();
 
-  function approve() {
+  // 2026-10-27: 이용 시작·해지 전에 확인(예전엔 누르면 바로 적용).
+  const [confirmDialog, ask] = useConfirm();
+  async function approve() {
     if (pending) return;
+    if (!(await ask({ title: "팀 요금제 적용", message: `${row.groupName}에 ${start}부터 ${end}까지 팀 요금제를 적용할까요? 그룹 전원이 바로 프리미엄이 됩니다. 입금을 확인했는지 다시 봐 주세요.`, confirmLabel: "적용" }))) return;
     setMsg(null);
     run(async () => {
       const res = await approveTeamPlanAction({
@@ -71,8 +75,9 @@ function TeamRow({ row, today }: { row: Row; today: string }) {
     });
   }
 
-  function cancel() {
+  async function cancel() {
     if (pending) return;
+    if (!(await ask({ title: "팀 요금제 해지", message: "이 그룹의 팀 요금제를 해지할까요? 그룹원의 프리미엄이 바로 끝납니다.", confirmLabel: "해지", tone: "danger" }))) return;
     run(async () => {
       const res = await cancelTeamPlanAction(row.groupId);
       setMsg(res.ok ? "해지했어요." : res.error);
@@ -86,6 +91,7 @@ function TeamRow({ row, today }: { row: Row; today: string }) {
       data-group={row.groupId}
       className="app-card p-4"
     >
+      {confirmDialog}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-zinc-950 dark:text-zinc-100">

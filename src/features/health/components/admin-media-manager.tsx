@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Check, Loader2, Trash2 } from "lucide-react";
+import { useConfirm } from "@/components/use-confirm";
 
 import {
   deleteExerciseMediaAction,
@@ -54,7 +55,10 @@ export function AdminMediaManager({
     });
   }
 
-  function remove(id: string) {
+  // 2026-10-27: 삭제 전에 확인(예전엔 누르면 바로 삭제).
+  const [confirmDialog, ask] = useConfirm();
+  async function remove(id: string) {
+    if (!(await ask({ title: "미디어 삭제", message: "이 운동의 시범 미디어 연결을 지울까요? 앱의 운동 화면에서 바로 사라집니다.", confirmLabel: "삭제", tone: "danger" }))) return;
     start(async () => {
       const res = await deleteExerciseMediaAction(id);
       if (res.ok) setMedia((prev) => prev.filter((m) => m.exerciseId !== id));
@@ -67,6 +71,7 @@ export function AdminMediaManager({
 
   return (
     <div className="space-y-8">
+      {confirmDialog}
       <section className="space-y-3 rounded-2xl border border-zinc-200/70 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-5 shadow-sm">
         <h2 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
           미디어 등록 / 수정

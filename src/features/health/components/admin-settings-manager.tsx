@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useConfirm } from "@/components/use-confirm";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import { addAdminAction, removeAdminAction } from "@/features/health/actions";
@@ -26,7 +27,10 @@ export function AdminSettingsManager({ admins }: { admins: AdminRow[] }) {
     });
   }
 
-  function remove(e: string) {
+  // 2026-10-27: 삭제 전에 확인(예전엔 누르면 바로 삭제).
+  const [confirmDialog, ask] = useConfirm();
+  async function remove(e: string) {
+    if (!(await ask({ title: "관리자 해제", message: `${e} 계정의 관리자 권한을 해제할까요? 이 콘솔에 더 이상 들어올 수 없습니다.`, confirmLabel: "해제", tone: "danger" }))) return;
     setError(null);
     start(async () => {
       const res = await removeAdminAction(e);
@@ -37,6 +41,7 @@ export function AdminSettingsManager({ admins }: { admins: AdminRow[] }) {
 
   return (
     <div className="space-y-5">
+      {confirmDialog}
       <div className="flex items-center gap-2">
         <input
           aria-label="관리자 이메일"

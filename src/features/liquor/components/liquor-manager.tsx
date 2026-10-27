@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/use-confirm";
 import {
   addLiquorPriceAction,
   deleteLiquorAction,
@@ -211,6 +212,8 @@ function LiquorRowView({
   const [pending, startTransition] = useTransition();
   const [rowError, setRowError] = useState<string | null>(null);
   const [showPriceForm, setShowPriceForm] = useState(false);
+  // 2026-10-27: 브라우저 confirm 대신 앱 안 확인 창(안드로이드 WebView 에선 confirm 이 늘 false).
+  const [confirmDialog, ask] = useConfirm();
 
   function reloadHistory() {
     startTransition(async () => {
@@ -237,14 +240,14 @@ function LiquorRowView({
     }
   }
 
-  function onDelete() {
-    if (
-      !confirm(
-        `"${row.productName ?? row.normalizedName}" 상품과 연결된 모든 가격을 삭제합니다. 계속할까요?`,
-      )
-    ) {
-      return;
-    }
+  async function onDelete() {
+    const ok = await ask({
+      title: "상품 삭제",
+      message: `"${row.productName ?? row.normalizedName}" 상품과 연결된 모든 가격을 삭제합니다. 되돌릴 수 없습니다.`,
+      confirmLabel: "삭제",
+      tone: "danger",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const res = await deleteLiquorAction(row.id);
       if (res.ok) onDeleted();
@@ -252,8 +255,8 @@ function LiquorRowView({
     });
   }
 
-  function onDeletePrice(priceId: number) {
-    if (!confirm("이 판매처 가격을 삭제할까요?")) return;
+  async function onDeletePrice(priceId: number) {
+    if (!(await ask({ title: "가격 삭제", message: "이 판매처 가격을 삭제할까요?", confirmLabel: "삭제", tone: "danger" }))) return;
     startTransition(async () => {
       const res = await deleteLiquorPriceAction(priceId);
       if (res.ok) {
@@ -266,6 +269,7 @@ function LiquorRowView({
 
   return (
     <>
+      {confirmDialog}
       <tr className="bg-white align-top dark:bg-zinc-900">
         <td className="px-2 py-3">
           <button
