@@ -20,6 +20,8 @@ export const OVERVIEW_LINK: AdminLink = { href: "/admin", label: "대시보드" 
 
 /** 사이트별 트리. 헬쑤앱 대시보드는 바깥(개요) 대시보드로 빠져서 여기엔 없다. */
 export const ADMIN_GROUPS: AdminGroup[] = [
+  { key: "library", label: "자료실 · 검수", href: "/admin/library", links: [{ href: "/admin/library", label: "자료실 · 검수" }] },
+  { key: "projects", label: "프로젝트 사이트", href: "/admin/projects", links: [{ href: "/admin/projects", label: "프로젝트 사이트" }] },
   {
     key: "server",
     label: "서버 관리",

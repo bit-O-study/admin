@@ -59,6 +59,8 @@ export function DashboardView({
         </div>
       </header>
 
+      <div className="flex flex-wrap gap-2"><Link href="/admin/projects" className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-indigo-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-indigo-300">프로젝트 사이트 열기 ↗</Link><Link href="/admin/library" className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-indigo-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-indigo-300">자료실 · 파일 검수</Link></div>
+
       <section aria-labelledby="todo-h">
         <h2 id="todo-h" className="mb-3 flex items-center gap-2 text-sm font-extrabold text-zinc-950 dark:text-zinc-50">
           처리할 일
