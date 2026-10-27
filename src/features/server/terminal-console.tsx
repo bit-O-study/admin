@@ -54,7 +54,7 @@ export function TerminalConsole() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-[28px]">터미널</h1>
-          <p className="mt-1 text-[13.5px] text-zinc-500">운영 서버에서 Claude Code·Codex·PowerShell 을 엽니다. 서버 전체 권한으로 실행되고, 입력은 관리자 이름과 함께 기록됩니다.</p>
+          <p className="mt-1 hidden text-[13.5px] text-zinc-500 sm:block">운영 서버에서 Claude Code·Codex·PowerShell 을 엽니다. 서버 전체 권한으로 실행되고, 입력은 관리자 이름과 함께 기록됩니다.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="flex items-center gap-1.5 text-[13px] text-zinc-500">
@@ -70,13 +70,14 @@ export function TerminalConsole() {
       </div>
       {error && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{error}</p>}
       <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+        {/* 폰에서는 세션 목록을 가로 한 줄로 — 세로로 쌓이면 터미널이 아래 탭 막대 밑으로 밀렸다. */}
         <nav aria-label="터미널 세션" className="rounded-lg border border-line bg-surface p-2">
           {sessions.length === 0 && <p className="p-3 text-[13px] text-zinc-500">아직 연 세션이 없습니다.</p>}
-          <ul className="space-y-1">
+          <ul className="flex gap-1 overflow-x-auto lg:block lg:space-y-1">
             {sessions.map((s) => (
-              <li key={s.id}>
+              <li key={s.id} className="shrink-0 lg:shrink">
                 <button type="button" onClick={() => setActive(s.id)} aria-current={s.id === active || undefined}
-                  className={`w-full rounded-md px-3 py-2 text-left text-[13px] ${s.id === active ? 'bg-zinc-100 dark:bg-zinc-800' : 'hover:bg-zinc-50 dark:hover:bg-zinc-900'}`}>
+                  className={`w-44 rounded-md px-3 py-2 text-left text-[13px] lg:w-full ${s.id === active ? 'bg-zinc-100 dark:bg-zinc-800' : 'hover:bg-zinc-50 dark:hover:bg-zinc-900'}`}>
                   <span className="flex items-center gap-1.5 font-medium">
                     <span className={`size-1.5 rounded-full ${isLive(s) ? 'bg-emerald-500' : 'bg-zinc-300'}`} />{TERMINAL_LABEL[s.kind]}
                   </span>
@@ -100,7 +101,7 @@ export function TerminalConsole() {
               <TerminalView key={current.id} session={current} onEnded={() => void refresh()} />
             </>
           ) : (
-            <div className="flex h-[480px] flex-col items-center justify-center gap-2 text-[13px] text-zinc-400">
+            <div className="flex h-[360px] flex-col items-center justify-center gap-2 text-[13px] text-zinc-400">
               <SquareTerminal className="size-6" />위에서 세션을 열거나 왼쪽에서 고르세요.
             </div>
           )}
@@ -111,10 +112,16 @@ export function TerminalConsole() {
   );
 }
 
-/** xterm 화면: 출력은 0.25초마다 이어 받고, 키 입력은 모아서 보낸다. */
+// xterm 은 CSS 변수(var(--font-…))로 글자 폭을 재지 못해 칸이 벌어지고 마지막 줄이 잘렸다 — 실제 글꼴 이름만 쓴다.
+const TERM_FONT = '"Cascadia Mono", Consolas, "D2Coding", "Malgun Gothic", Menlo, monospace';
+const KEY_BUTTONS: [string, string][] = [['Enter', '\r'], ['Esc', '\x1b'], ['Tab', '\t'], ['Shift+Tab', '\x1b[Z'], ['↑', '\x1b[A'], ['↓', '\x1b[B'], ['Ctrl+C', '\x03']];
+
+/** xterm 화면: 출력은 0.25초마다 이어 받고, 키 입력은 모아서 보낸다. 아래 입력창은 쓰는 글이 그대로 보인다(한글 조합·폰). */
 function TerminalView({ session, onEnded }: { session: TerminalSession; onEnded: () => void }) {
   const box = useRef<HTMLDivElement>(null);
+  const sendRef = useRef<(data: string) => void>(() => {});
   const [state, setState] = useState(session.state);
+  const [line, setLine] = useState('');
   useEffect(() => {
     let disposed = false;
     let after = 0;
@@ -128,11 +135,10 @@ function TerminalView({ session, onEnded }: { session: TerminalSession; onEnded:
     void (async () => {
       const [{ Terminal }, { FitAddon }] = await Promise.all([import('@xterm/xterm'), import('@xterm/addon-fit')]);
       if (disposed || !box.current) return;
-      const term = new Terminal({ fontFamily: 'var(--font-geist-mono), Consolas, monospace', fontSize: 13, cursorBlink: true, scrollback: 5000, theme: { background: '#0a0a0a' } });
+      const term = new Terminal({ fontFamily: TERM_FONT, fontSize: 13, lineHeight: 1.15, cursorBlink: true, scrollback: 5000, theme: { background: '#0a0a0a' } });
       const fit = new FitAddon();
       term.loadAddon(fit);
       term.open(box.current);
-      fit.fit();
       cleanups.push(() => term.dispose());
 
       const flush = () => {
@@ -141,22 +147,27 @@ function TerminalView({ session, onEnded }: { session: TerminalSession; onEnded:
         const data = pending; pending = '';
         void post(url, { type: 'input', data });
       };
-      const input = term.onData((data) => {
+      const queue = (data: string) => {
         if (!live) return;
         pending += data;
         if (!flushTimer) flushTimer = setTimeout(flush, 40);
-      });
+      };
+      sendRef.current = queue;
+      const input = term.onData(queue);
       cleanups.push(() => input.dispose());
       const sendSize = () => { if (live) void post(url, { type: 'resize', cols: term.cols, rows: term.rows }); };
-      const observer = new ResizeObserver(() => {
+      const refit = () => {
         fit.fit();
         if (resizeTimer) clearTimeout(resizeTimer);
         resizeTimer = setTimeout(sendSize, 300);
-      });
+      };
+      const observer = new ResizeObserver(refit);
       observer.observe(box.current);
       cleanups.push(() => observer.disconnect());
-      sendSize();
-      term.focus();
+      refit();
+      // 글꼴을 다 받은 뒤 글자 크기를 다시 재야 줄 수가 맞는다.
+      void document.fonts?.ready.then(() => { if (!disposed) { term.options.fontFamily = TERM_FONT; refit(); } });
+      if (window.matchMedia('(min-width: 1024px)').matches) term.focus();
 
       // 끝난 세션도 기록은 끝까지 보여 준다.
       while (!disposed) {
@@ -178,6 +189,7 @@ function TerminalView({ session, onEnded }: { session: TerminalSession; onEnded:
     })();
     return () => {
       disposed = true;
+      sendRef.current = () => {};
       if (flushTimer) clearTimeout(flushTimer);
       if (resizeTimer) clearTimeout(resizeTimer);
       cleanups.forEach((fn) => fn());
@@ -185,5 +197,37 @@ function TerminalView({ session, onEnded }: { session: TerminalSession; onEnded:
     // 세션이 바뀌면 key 로 새로 그린다 — 상태 갱신마다 다시 붙지 않게 id 만 본다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.id]);
-  return <div ref={box} data-state={state} className="h-[560px] p-2" aria-label="터미널 화면" />;
+
+  const live = isLive({ state });
+  function submit(event: React.FormEvent) {
+    event.preventDefault();
+    sendRef.current(line + '\r');
+    setLine('');
+  }
+  return (
+    <>
+      {/* 높이는 화면에 맞춘다(폰: 아래 탭 막대·입력창 자리를 뺀다). 안쪽 여백은 바깥에 둬야 fit 이 줄 수를 정확히 잰다. */}
+      <div className="h-[calc(100dvh-380px)] min-h-[260px] p-2 lg:h-[calc(100dvh-430px)] lg:min-h-[380px]">
+        <div ref={box} data-state={state} className="h-full w-full" aria-label="터미널 화면" />
+      </div>
+      <form onSubmit={submit} className="space-y-2 border-t border-zinc-800 p-2">
+        <div className="flex gap-2">
+          <input
+            value={line} onChange={(e) => setLine(e.target.value)} disabled={!live}
+            aria-label="터미널에 보낼 내용" placeholder={live ? '여기에 입력하고 Enter — 쓰는 글이 그대로 보입니다' : '끝난 세션입니다'}
+            className="h-9 min-w-0 flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 font-mono text-[13px] text-zinc-100 placeholder:text-zinc-500 focus:border-zinc-400 focus:outline-none disabled:opacity-50"
+          />
+          <button type="submit" disabled={!live} className="h-9 shrink-0 rounded-md bg-zinc-100 px-3 text-[13px] font-medium text-zinc-900 hover:bg-white disabled:opacity-50">보내기</button>
+        </div>
+        <div className="flex gap-1.5 overflow-x-auto" aria-label="특수 키">
+          {KEY_BUTTONS.map(([label, data]) => (
+            <button key={label} type="button" disabled={!live} onClick={() => sendRef.current(data)}
+              className="h-7 shrink-0 rounded border border-zinc-700 px-2 font-mono text-[12px] text-zinc-300 hover:bg-zinc-800 disabled:opacity-50">
+              {label}
+            </button>
+          ))}
+        </div>
+      </form>
+    </>
+  );
 }
