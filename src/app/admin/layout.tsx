@@ -6,6 +6,9 @@ import { getNavCounts, navBadges } from "@/features/admin/action-items";
 import { AppHeader } from "@/features/admin/components/app-header";
 import { CommandPalette } from "@/features/admin/components/command-palette";
 import { MobileNav } from "@/features/admin/components/mobile-nav";
+import { StatusPill } from "@/features/admin/components/status-pill";
+import { getStatusReport } from "@/features/admin/status";
+import { summarize } from "@/features/admin/status-model";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +34,15 @@ export default async function AdminLayout({
 
 async function Header() {
   const [counts, email] = await Promise.all([getNavCounts(), getCurrentAdminEmail()]);
-  return <AppHeader badges={navBadges(counts)} email={email} />;
+  // 상태 확인(DB·API·서버)은 느릴 수 있어 알약만 따로 기다린다 — 막대와 탭은 먼저 뜬다.
+  return <AppHeader badges={navBadges(counts)} email={email} status={<Suspense fallback={null}><HeaderStatus /></Suspense>} />;
+}
+
+async function HeaderStatus() {
+  const report = await getStatusReport();
+  if (report.items.length === 0) return null;
+  const sum = summarize(report.items);
+  return <StatusPill level={sum.level} label={sum.label} problems={report.items.filter((i) => i.level !== "ok")} checkedAt={report.checkedAt} />;
 }
 
 async function MobileTabs() {

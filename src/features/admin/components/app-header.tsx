@@ -2,7 +2,7 @@
 
 import Link from "@/components/PendingLink";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronsUpDown, LogOut, Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -37,7 +37,7 @@ function useDismiss(open: boolean, close: () => void) {
 const badgeClass = "rounded-full bg-red-500 px-1.5 text-[10.5px] font-semibold leading-[18px] text-white tabular-nums";
 const fmt = (n: number) => (n > 99 ? "99+" : String(n));
 
-export function AppHeader({ badges = {}, email }: { badges?: Record<string, number>; email?: string | null }) {
+export function AppHeader({ badges = {}, email, status }: { badges?: Record<string, number>; email?: string | null; /** 상태 알약(서버에서 따로 불러와 끼운다). */ status?: ReactNode }) {
   const pathname = usePathname() ?? "";
   const here = locate(pathname);
   const scopeBadge = (s: NavScope) => s.tabs.flatMap(tabHrefs).reduce((sum, h) => sum + (badges[h] ?? 0), 0);
@@ -51,6 +51,7 @@ export function AppHeader({ badges = {}, email }: { badges?: Record<string, numb
         <span aria-hidden="true" className="select-none text-xl font-light text-zinc-300 dark:text-zinc-700">/</span>
         <ScopeSwitcher current={here.scope} badgeOf={scopeBadge} />
         <span className="flex-1" />
+        {status}
         <button
           type="button"
           onClick={openCommandPalette}

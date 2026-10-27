@@ -15,6 +15,12 @@ export const CRON_NAMES = [
   "workout-inactivity",
 ] as const;
 export type CronName = (typeof CRON_NAMES)[number];
+/** 화면 이름 — 크론 화면과 상태 화면이 같이 쓴다(2026-10-27). */
+export const CRON_LABEL: Record<string, string> = {
+  "daily-reminders": "하루 리마인더 (매일 20시)",
+  "weekly-group-mvp": "주간 그룹 MVP (월요일)",
+  "workout-inactivity": "운동 무활동 감지 (10분마다)",
+};
 
 /**
  * - `ok`      정상 실행(보낼 대상이 0명이어도 ok — 실행 자체는 성공)

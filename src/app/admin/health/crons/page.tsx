@@ -1,5 +1,6 @@
 import { getCronRuns } from "@/features/health/cron-runs";
 import {
+  CRON_LABEL,
   formatDuration,
   formatSuccessRate,
   type CronRunSummary,
@@ -7,11 +8,6 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const CRON_LABEL: Record<string, string> = {
-  "daily-reminders": "하루 리마인더 (매일 20시)",
-  "weekly-group-mvp": "주간 그룹 MVP (월요일)",
-  "workout-inactivity": "운동 무활동 감지 (10분마다)",
-};
 
 const STATUS_LABEL: Record<string, string> = {
   ok: "정상",

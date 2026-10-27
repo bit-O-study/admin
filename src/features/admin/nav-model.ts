@@ -21,6 +21,7 @@ export const NAV_SCOPES: NavScope[] = [
     href: "/admin",
     tabs: [
       { href: "/admin", label: "개요" },
+      { href: "/admin/status", label: "상태" },
       { href: "/admin/admins", label: "관리자" },
     ],
   },

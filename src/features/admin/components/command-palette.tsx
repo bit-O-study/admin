@@ -7,11 +7,13 @@ import { CornerDownLeft, Search } from "lucide-react";
 import { Buffering } from "@/components/Buffering";
 import { cn } from "@/lib/utils";
 import { navEntries } from "@/features/admin/nav-model";
+import { SEARCH_MIN_LENGTH, type MemberHit, type ReportHit } from "@/features/admin/search-model";
 import { SCOPE_DOT } from "@/features/admin/services";
 
 /**
  * 통합 검색 (Ctrl/⌘ K) — 2026-10-27 BOadmin 2.0.
  * 어디서든 열린다: 키보드, 위쪽 막대 검색 버튼, 휴대폰 하단 탭(openCommandPalette 이벤트).
+ * 메뉴는 바로, 회원·문의·신고는 /api/admin/search 로 찾는다(전화번호는 결과에 싣지 않음).
  */
 const OPEN_EVENT = "boadmin:command-palette";
 export function openCommandPalette() {
@@ -19,6 +21,20 @@ export function openCommandPalette() {
 }
 
 type Item = { key: string; href: string; label: string; hint?: string; dot?: string; group: string };
+type SearchResponse = {
+  members: MemberHit[];
+  tickets: { id: string; number: number; title: string; status: string; unread: boolean }[];
+  reports: ReportHit[];
+  failed?: boolean;
+};
+
+function toItems(d: SearchResponse): Item[] {
+  return [
+    ...d.members.map((m) => ({ key: `u:${m.id}`, href: `/admin/health/members?q=${encodeURIComponent(m.email || m.name)}`, label: m.name, hint: `${m.email} · ${m.state}`, dot: SCOPE_DOT.health, group: "회원 · 헬쑤" })),
+    ...d.tickets.map((t) => ({ key: `t:${t.id}`, href: `/admin/health/support/${t.id}`, label: `#${t.number} ${t.title}`, hint: `${t.status}${t.unread ? " · 미확인" : ""}`, group: "고객센터 문의" })),
+    ...d.reports.map((r) => ({ key: `r:${r.id}`, href: `/admin/health/reports`, label: r.title, hint: r.hint, group: "신고" })),
+  ];
+}
 
 export function CommandPalette() {
   const router = useRouter();
@@ -33,7 +49,30 @@ export function CommandPalette() {
     [],
   );
   const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const items = menu.filter((e) => words.every((w) => `${e.hint} ${e.label}`.toLowerCase().includes(w)));
+  const menuHits = menu.filter((e) => words.every((w) => `${e.hint} ${e.label}`.toLowerCase().includes(w)));
+
+  // 회원·문의·신고는 서버에서 찾는다. 2글자부터, 입력이 250ms 멈추면, 앞선 요청은 취소.
+  const [remote, setRemote] = useState<{ q: string; items: Item[]; failed: boolean } | null>(null);
+  const term = q.trim();
+  useEffect(() => {
+    if (!open || term.length < SEARCH_MIN_LENGTH) return;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/admin/search?q=${encodeURIComponent(term)}`, { signal: ctrl.signal, cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((d: SearchResponse) => setRemote({ q: term, items: toItems(d), failed: Boolean(d.failed) }))
+        .catch((e: unknown) => {
+          if ((e as Error).name !== "AbortError") setRemote({ q: term, items: [], failed: true });
+        });
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [open, term]);
+  const fresh = remote && remote.q === term && term.length >= SEARCH_MIN_LENGTH ? remote : null;
+  const searching = term.length >= SEARCH_MIN_LENGTH && !fresh;
+  const items = [...(fresh?.items ?? []), ...menuHits];
 
   useEffect(() => {
     const show = () => {
@@ -88,7 +127,7 @@ export function CommandPalette() {
                   if (e.key === "ArrowUp") { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)); }
                   if (e.key === "Enter" && items[cursor]) go(items[cursor].href);
                 }}
-                placeholder="메뉴 이름으로 찾기 — 예: 고객센터, 크론, 요금제"
+                placeholder="회원 이름·메일, 문의 번호·제목, 신고, 메뉴"
                 aria-label="검색어"
                 className="h-12 flex-1 bg-transparent text-[15px] outline-none placeholder:text-zinc-400"
               />
@@ -114,7 +153,9 @@ export function CommandPalette() {
                   </li>
                 );
               })}
-              {items.length === 0 && <li className="px-3 py-8 text-center text-[13px] text-zinc-500">“{q}”에 맞는 메뉴가 없어요.</li>}
+              {searching && <li className="px-3 py-2 text-[12px] text-zinc-500" role="status">회원·문의·신고를 찾는 중…</li>}
+              {fresh?.failed && <li className="px-3 py-2 text-[12px] text-amber-700 dark:text-amber-400" role="status">일부 결과를 불러오지 못했어요.</li>}
+              {items.length === 0 && !searching && <li className="px-3 py-8 text-center text-[13px] text-zinc-500">{q.trim() ? `“${q.trim()}”에 맞는 결과가 없어요.` : "찾을 말을 입력하세요."}</li>}
             </ul>
             <div className="flex gap-4 border-t border-line px-4 py-2 text-[11.5px] text-zinc-500">
               <span><kbd className="mr-1 rounded border border-line px-1 font-mono">↑↓</kbd>이동</span>
