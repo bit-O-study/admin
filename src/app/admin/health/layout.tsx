@@ -1,3 +1,5 @@
+import { SegmentNav } from "@/features/admin/components/app-header";
+
 export const dynamic = "force-dynamic";
 
 export default function HealthLayout({
@@ -5,6 +7,11 @@ export default function HealthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 사이트별 하위 네비게이션은 왼쪽 사이드바 트리로 통합됨(중복 탭 제거).
-  return <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">{children}</div>;
+  // 2026-10-27: 탭 안에 화면이 여럿인 곳(요금제·고객센터·운영·설정)은 본문 위에 세그먼트를 그린다.
+  return (
+    <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+      <SegmentNav />
+      {children}
+    </div>
+  );
 }

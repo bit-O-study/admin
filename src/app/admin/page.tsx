@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { isSiteConfigured } from "@/lib/supabase/admin-clients";
 import { getActiveUsersSeries, getMembers } from "@/features/health/data";
-import { HealthDashboard } from "@/features/health/components/health-dashboard";
 import { getIqStats } from "@/features/iq/data";
 import {
   getLiquorVisitToday,
@@ -41,7 +40,7 @@ export default async function AdminDashboardPage() {
       today: healthDays.length ? healthDays[healthDays.length - 1] : 0,
       yesterday: healthDays.length > 1 ? healthDays[healthDays.length - 2] : null,
       spark: healthDays,
-      href: "/admin/health/members",
+      href: "/admin/health",
       extra: [{ label: "총 회원", value: `${lite.filter((m) => !m.withdrawnAt).length.toLocaleString("ko-KR")}명` }],
     },
     memo: { label: "로그인 접속", today: null, href: "/admin/memo", note: "불러오는 중…" },
@@ -62,12 +61,8 @@ export default async function AdminDashboardPage() {
   };
 
   return (
-    <DashboardView actions={actions} kpis={kpis} serviceCards={{ memo: <Suspense fallback={<KpiCard service="memo" kpi={kpis.memo} />}><MemoCard /></Suspense> }}>
-      <section>
-        <h2 className="mb-3 text-sm font-extrabold text-zinc-950 dark:text-zinc-50">헬쑤 회원·접속 추이</h2>
-        <Suspense fallback={<p role="status" className="p-4 text-sm text-zinc-500">접속 추이를 불러오는 중…</p>}><HealthCharts members={lite} day={day} /></Suspense>
-      </section>
-    </DashboardView>
+    // 2026-10-27: 헬쑤 회원·접속 그래프는 헬쑤 › 개요로 옮겼다.
+    <DashboardView actions={actions} kpis={kpis} serviceCards={{ memo: <Suspense fallback={<KpiCard service="memo" kpi={kpis.memo} />}><MemoCard /></Suspense> }} />
   );
 }
 
@@ -75,8 +70,4 @@ async function MemoCard() {
   const memo = await getMemoStats(30);
   const days = memo?.days ?? [];
   return <KpiCard service="memo" kpi={{ label: "로그인 접속", today: memo ? (days.at(-1)?.visitors ?? 0) : null, yesterday: memo && days.length > 1 ? days[days.length - 2].visitors : null, spark: days.map(d => d.visitors), href: "/admin/memo", note: memo ? undefined : isMemoConfigured() ? "불러오지 못함" : "미설정", extra: memo ? [{ label: "전체 사용자", value: `${memo.totals.users}명` }] : undefined }} />;
-}
-async function HealthCharts({ members, day }: { members: { createdAt: string; withdrawnAt: string | null }[]; day: Awaited<ReturnType<typeof getActiveUsersSeries>> }) {
-  const [month, year] = await Promise.all([getActiveUsersSeries("month"), getActiveUsersSeries("year")]);
-  return <HealthDashboard members={members} active={{ day, month, year }} />;
 }

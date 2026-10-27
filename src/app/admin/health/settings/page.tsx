@@ -1,109 +1,35 @@
-
-
-import {
-  getAdmins,
-  getPostModerators,
-} from "@/features/health/data";
-import { DEBUG_FEATURES } from "@/features/health/debug-features";
-import {
-  getDebugAccounts,
-  getDebugFeatureStates,
-} from "@/features/health/debug-features.server";
+import { PageHeader } from "@/components/ui/kit";
 import { getGroupMode } from "@/features/health/group-mode.server";
-import { AdminSettingsManager } from "@/features/health/components/admin-settings-manager";
-import { DebugAccountsManager } from "@/features/health/components/debug-accounts-manager";
-import { DebugFeaturesManager } from "@/features/health/components/debug-features-manager";
 import { GroupModeManager } from "@/features/health/components/group-mode-manager";
 import { getDepositInfo } from "@/features/health/billing/team-store";
 import { DepositInfoManager } from "@/features/health/components/deposit-info-manager";
-import { PostModeratorsManager } from "@/features/health/components/post-moderators-manager";
+import { SettingsSection } from "@/features/health/components/settings-section";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminSettingsPage() {
-
-  const [admins, debugStates, debugAccounts, moderators, groupMode, deposit] =
-    await Promise.all([
-      getAdmins(),
-      getDebugFeatureStates(),
-      getDebugAccounts(),
-      getPostModerators(),
-      getGroupMode(),
-      getDepositInfo(),
-    ]);
-  const debugFeatures = DEBUG_FEATURES.map((f) => ({
-    id: f.id,
-    label: f.label,
-    visibility: debugStates[f.id] ?? "debug",
-  }));
-
+/**
+ * 헬쑤 › 설정 › 앱 설정 (2026-10-27 BOadmin 2.0).
+ * 한 화면에 6개가 쌓여 있던 설정을 나눴다: 관리자는 전체 › 관리자로, 게시물 관리자·디버그는 › 권한으로.
+ */
+export default async function AppSettingsPage() {
+  const [groupMode, deposit] = await Promise.all([getGroupMode(), getDepositInfo()]);
   return (
-    <main>
-      <h1 className="mb-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">
-        관리자 설정
-      </h1>
-      <p className="mb-6 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-        회원의 이메일을 입력해 관리자로 지정할 수 있습니다. 관리자로 지정된
-        계정은 일반 화면 대신 이 관리자 콘솔로 이동합니다.
-      </p>
-      <AdminSettingsManager admins={admins} />
-
-      <section className="mt-10">
-        <h2 className="mb-1 text-lg font-bold text-zinc-950 dark:text-zinc-100">
-          그룹탭 모드
-        </h2>
-        <p className="mb-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          그룹탭에 어떤 기능을 켤지 앱 전체에 대해 선택합니다. &quot;헬스장&quot;은
-          기존 공유펫·랭킹 화면, &quot;오늘 운동 인증&quot;은 그룹원이 오늘 운동을 3초
-          움짤로 올리는 인증 피드입니다.
-        </p>
-        <GroupModeManager mode={groupMode} />
-      </section>
-
-      <section className="mt-10">
-        <h2 className="mb-1 text-lg font-bold text-zinc-950 dark:text-zinc-100">
-          입금 계좌 안내
-        </h2>
-        <p className="mb-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          팀 요금제(트레이너·헬스장)를 신청한 그룹장에게 보여 줄 계좌입니다.
-          계좌는 바뀌는 값이라 코드가 아니라 여기에 둡니다 — 여기를 안 채우면
-          신청 화면에는 &quot;확인 후 연락드릴게요&quot;만 보입니다.
-        </p>
-        <DepositInfoManager initial={deposit} />
-      </section>
-
-      <section className="mt-10">
-        <h2 className="mb-1 text-lg font-bold text-zinc-950 dark:text-zinc-100">
-          게시물 관리자
-        </h2>
-        <p className="mb-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          여기에 지정한 계정은 커뮤니티의 모든 게시물·댓글을 삭제하거나 수정할 수
-          있습니다. (관리자 계정은 기본으로 가능합니다.)
-        </p>
-        <PostModeratorsManager moderators={moderators} />
-      </section>
-
-      <section className="mt-10">
-        <h2 className="mb-1 text-lg font-bold text-zinc-950 dark:text-zinc-100">
-          디버그 계정
-        </h2>
-        <p className="mb-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          여기에 지정한 계정은 관리자가 아니어도 켜진 디버그 기능을 앱에서 볼 수
-          있습니다. (테스트폰 계정 지정용. 관리자 계정은 항상 볼 수 있습니다.)
-        </p>
-        <DebugAccountsManager accounts={debugAccounts} />
-      </section>
-
-      <section className="mt-10">
-        <h2 className="mb-1 text-lg font-bold text-zinc-950 dark:text-zinc-100">
-          디버그 기능
-        </h2>
-        <p className="mb-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-          개발/진단용 기능을 기능별로 켜고 끌 수 있습니다. 켜진 기능은 디버그
-          계정에게만 앱에 표시됩니다.
-        </p>
-        <DebugFeaturesManager features={debugFeatures} />
-      </section>
-    </main>
+    <>
+      <PageHeader title="앱 설정" description="헬쑤 앱 전체에 바로 적용되는 값입니다." />
+      <div className="flex flex-col gap-10">
+        <SettingsSection
+          title="그룹탭 모드"
+          description={<>그룹탭에 어떤 기능을 켤지 앱 전체에 대해 고릅니다. &quot;헬스장&quot;은 공유펫·랭킹 화면, &quot;오늘 운동 인증&quot;은 그룹원이 오늘 운동을 3초 움짤로 올리는 인증 피드입니다.</>}
+        >
+          <GroupModeManager mode={groupMode} />
+        </SettingsSection>
+        <SettingsSection
+          title="입금 계좌 안내"
+          description={<>팀 요금제(트레이너·헬스장)를 신청한 그룹장에게 보여 줄 계좌입니다. 계좌는 바뀌는 값이라 코드가 아니라 여기에 둡니다. 비워 두면 신청 화면에는 &quot;확인 후 연락드릴게요&quot;만 보입니다.</>}
+        >
+          <DepositInfoManager initial={deposit} />
+        </SettingsSection>
+      </div>
+    </>
   );
 }

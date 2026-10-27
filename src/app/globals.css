@@ -1,34 +1,95 @@
 @import "tailwindcss";
 
+/*
+ * BOadmin 2.0 디자인 토큰 (2026-10-27).
+ * 화면 70여 개가 zinc·indigo 클래스를 직접 쓴다. 파일마다 고치지 않고 팔레트를 다시 정의해
+ * 한 번에 같은 인상으로 맞춘다.
+ * - zinc  → 색 기운 없는 무채색 회색. 바탕·글씨는 흑백, 선은 아주 옅게.
+ * - indigo → 파랑. 링크·포커스·선택 표시에만 쓴다. 주요 버튼은 검정(다크에선 흰색)이다(kit.tsx).
+ * - 굵기는 400·500·600 세 단계로 줄인다. 예전엔 제목·숫자가 전부 font-black 이었다.
+ */
+@theme {
+  --font-sans: var(--font-geist), "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f2f2f2;
+  --color-zinc-200: #e8e8e8;
+  --color-zinc-300: #d4d4d4;
+  --color-zinc-400: #a1a1a1;
+  --color-zinc-500: #6f6f6f;
+  --color-zinc-600: #4f4f4f;
+  --color-zinc-700: #3a3a3a;
+  --color-zinc-800: #262626;
+  --color-zinc-900: #171717;
+  --color-zinc-950: #0a0a0a;
+
+  --color-indigo-50: #ecf4ff;
+  --color-indigo-100: #d9e9ff;
+  --color-indigo-200: #b6d4ff;
+  --color-indigo-300: #85b8ff;
+  --color-indigo-400: #52a8ff;
+  --color-indigo-500: #1f86f5;
+  --color-indigo-600: #0068d6;
+  --color-indigo-700: #0055b0;
+  --color-indigo-800: #00448c;
+  --color-indigo-900: #00366e;
+  --color-indigo-950: #0f2540;
+
+  --font-weight-black: 600;
+  --font-weight-extrabold: 600;
+  --font-weight-bold: 600;
+
+  --radius-md: 0.375rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
+}
+
 :root {
   color-scheme: light dark;
   /* 휴대폰 안전 영역. 안드로이드 앱(WebView)은 앱이 이미 시스템 바만큼 비우므로 0 —
      둘 다 더하면 하단 탭이 두 배로 길어진다(메모 앱에서 겪은 문제). 판별은 layout.tsx. */
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --admin-canvas: #fafafa;
+  --admin-surface: #ffffff;
+  --admin-line: #ebebeb;
+  --admin-muted: #6f6f6f;
 }
 :root[data-shell="app"] {
   --safe-bottom: 0px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --admin-canvas: #000000; --admin-surface: #0a0a0a; --admin-line: #262626; --admin-muted: #a1a1a1; }
 }
 
 html,
 body {
   min-height: 100%;
 }
+body {
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11";
+}
 
 @theme inline {
-  --color-brand: #4f46e5;
+  --color-brand: var(--color-indigo-600);
+  --color-canvas: var(--admin-canvas);
+  --color-surface: var(--admin-surface);
   --color-line: var(--admin-line);
   --color-muted: var(--admin-muted);
 }
-:root { --admin-line: #d4d4d8; --admin-muted: #52525b; }
-@media (prefers-color-scheme: dark) {
-  :root { --admin-line: #3f3f46; --admin-muted: #a1a1aa; }
-}
+
 @layer components {
   .admin-buffering { animation: admin-buffering-appear 0s .18s both; }
-  .app-card { @apply rounded-2xl border border-zinc-200/70 bg-white shadow-[0_1px_2px_rgba(18,21,40,.04),0_4px_16px_rgba(18,21,40,.04)] dark:border-zinc-800 dark:bg-zinc-900; }
-  .app-title { @apply text-xl font-black tracking-tight sm:text-2xl; }
+  /* 면은 선 하나로 구분한다. 그림자는 겹쳐 뜨는 것(팝오버·대화상자·패널)에만. */
+  .app-card { @apply rounded-xl border border-line bg-surface; }
+  .app-title { @apply text-2xl font-semibold tracking-tight; }
   .app-page { @apply space-y-5; }
   .app-container { @apply mx-auto w-full max-w-4xl; }
+  /* 가로로 넘치는 탭 줄의 스크롤바 숨김(휴대폰). */
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
 }
 @keyframes admin-buffering-appear { from { opacity: 0; } to { opacity: 1; } }

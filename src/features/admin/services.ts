@@ -16,3 +16,13 @@ export const SERVICES: Record<
 };
 
 export const SERVICE_ORDER: ServiceKey[] = ["health", "memo", "iq", "liquor"];
+
+/** 위쪽 서비스 전환·검색 결과의 점 색 (2026-10-27). 전체 서비스는 검정, 서버는 회색. */
+export const SCOPE_DOT: Record<"all" | "health" | "memo" | "iq" | "liquor" | "server", string> = {
+  all: "bg-zinc-950 dark:bg-zinc-50",
+  health: "bg-emerald-500",
+  memo: "bg-pink-500",
+  iq: "bg-violet-500",
+  liquor: "bg-amber-500",
+  server: "bg-zinc-400",
+};
