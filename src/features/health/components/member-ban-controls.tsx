@@ -50,7 +50,7 @@ export function MemberBanControls({
         placeholder="정지 사유 (선택)"
         onChange={(e) => setReason(e.target.value)}
         disabled={pending}
-        className="h-7 w-44 rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 px-2 text-xs text-zinc-800 dark:text-zinc-200"
+        className="h-8 w-full max-w-xs rounded-md border border-line bg-surface px-2.5 text-[13px] text-zinc-900 dark:text-zinc-100"
       />
       <div className="flex flex-wrap items-center gap-1">
         {pending ? (
@@ -60,7 +60,7 @@ export function MemberBanControls({
           type="button"
           disabled={pending}
           onClick={() => run(() => suspendUserAction(userId, 7, r()))}
-          className={`${btn} border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100`}
+          className={`${btn} border-line bg-surface text-zinc-800 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900`}
         >
           <Clock aria-hidden="true" size={12} />
           7일
@@ -69,7 +69,7 @@ export function MemberBanControls({
           type="button"
           disabled={pending}
           onClick={() => run(() => suspendUserAction(userId, 30, r()))}
-          className={`${btn} border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100`}
+          className={`${btn} border-line bg-surface text-zinc-800 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900`}
         >
           <Clock aria-hidden="true" size={12} />
           30일
@@ -78,7 +78,7 @@ export function MemberBanControls({
           type="button"
           disabled={pending}
           onClick={() => setAskBan(true)}
-          className={`${btn} border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 hover:bg-red-100`}
+          className={`${btn} border-red-600 bg-red-600 text-white hover:bg-red-700 dark:border-red-500 dark:bg-red-500`}
         >
           <Ban aria-hidden="true" size={12} />
           영구정지
@@ -88,7 +88,7 @@ export function MemberBanControls({
             type="button"
             disabled={pending}
             onClick={() => run(() => unbanUserAction(userId))}
-            className={`${btn} border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100`}
+            className={`${btn} border-line bg-surface text-zinc-800 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900`}
           >
             <RotateCcw aria-hidden="true" size={12} />
             해제

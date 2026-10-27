@@ -60,7 +60,7 @@ export function MemberPasswordReset({
         type="button"
         disabled={pending}
         onClick={() => setAsk(true)}
-        className={`${btn} border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-400 hover:bg-sky-100`}
+        className={`${btn} border-line bg-surface text-zinc-800 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900`}
       >
         {pending ? (
           <Loader2 aria-hidden="true" size={12} className="animate-spin" />
@@ -77,16 +77,16 @@ export function MemberPasswordReset({
       ) : null}
 
       {temp ? (
-        <div className="rounded-md border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 px-2 py-1.5">
+        <div className="rounded-md border border-line bg-canvas px-2.5 py-2">
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-zinc-500">임시 비밀번호</span>
-            <code className="select-all font-mono text-xs font-bold tracking-wider text-sky-800 dark:text-sky-300">
+            <code className="select-all font-mono text-xs font-bold tracking-wider text-zinc-950 dark:text-zinc-50">
               {temp}
             </code>
             <button
               type="button"
               onClick={copy}
-              className="ml-auto inline-flex items-center gap-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-400"
+              className="ml-auto inline-flex items-center gap-0.5 text-[11px] font-medium text-indigo-600 dark:text-indigo-400"
             >
               {copied ? <Check size={12} /> : <Copy size={12} />}
               {copied ? "복사됨" : "복사"}

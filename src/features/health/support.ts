@@ -130,3 +130,19 @@ export async function getSupportTicket(id: string) {
     deliveries: (deliveries.data ?? []) as { id: string; status: string; error_code: string | null; created_at: string }[],
   };
 }
+
+/**
+ * 회원 한 명의 최근 문의 (2026-10-27 BOadmin 2.0 회원 상세 패널).
+ * 못 읽으면 null — 빈 목록과 구분해 '불러오지 못함'을 보여 준다.
+ */
+export async function getMemberTickets(userId: string, limit = 5) {
+  const { db } = await requireAdmin();
+  const { data, error } = await db
+    .from("support_tickets")
+    .select("id, number, title, status, created_at, admin_read_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return null;
+  return (data ?? []) as Pick<SupportTicket, "id" | "number" | "title" | "status" | "created_at" | "admin_read_at">[];
+}

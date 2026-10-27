@@ -30,7 +30,7 @@ type SearchResponse = {
 
 function toItems(d: SearchResponse): Item[] {
   return [
-    ...d.members.map((m) => ({ key: `u:${m.id}`, href: `/admin/health/members?q=${encodeURIComponent(m.email || m.name)}`, label: m.name, hint: `${m.email} · ${m.state}`, dot: SCOPE_DOT.health, group: "회원 · 헬쑤" })),
+    ...d.members.map((m) => ({ key: `u:${m.id}`, href: `/admin/health/members?member=${encodeURIComponent(m.id)}`, label: m.name, hint: `${m.email} · ${m.state}`, dot: SCOPE_DOT.health, group: "회원 · 헬쑤" })),
     ...d.tickets.map((t) => ({ key: `t:${t.id}`, href: `/admin/health/support/${t.id}`, label: `#${t.number} ${t.title}`, hint: `${t.status}${t.unread ? " · 미확인" : ""}`, group: "고객센터 문의" })),
     ...d.reports.map((r) => ({ key: `r:${r.id}`, href: `/admin/health/reports`, label: r.title, hint: r.hint, group: "신고" })),
   ];
