@@ -73,6 +73,12 @@ describe("locate", () => {
 });
 
 describe("메뉴 정의", () => {
+  it("자료실은 메모 moa 탭, 사이트는 전체 서비스 탭", () => {
+    expect(locate("/admin/library").scope.key).toBe("memo");
+    expect(locate("/admin/library").tab?.label).toBe("자료실");
+    expect(locate("/admin/projects").scope.key).toBe("all");
+  });
+
   it("경로가 겹치지 않는다", () => {
     const all = NAV_SCOPES.flatMap((s) => s.tabs.flatMap((t) => (t.segments ? t.segments.map((x) => x.href) : [t.href])));
     expect(new Set(all).size).toBe(all.length);
@@ -84,7 +90,7 @@ describe("메뉴 정의", () => {
       "/admin", "/admin/server", "/admin/health/members", "/admin/health/grants", "/admin/health/trainers", "/admin/health/billing",
       "/admin/health/support", "/admin/health/reports", "/admin/health/coaching", "/admin/health/support/notifications",
       "/admin/health/events", "/admin/health/crons", "/admin/health/exercise-media", "/admin/health/settings", "/admin/health/test",
-      "/admin/memo", "/admin/iq", "/admin/iq/questions", "/admin/liquor",
+      "/admin/memo", "/admin/iq", "/admin/iq/questions", "/admin/liquor", "/admin/library", "/admin/projects",
     ]) expect(hrefs.has(old)).toBe(true);
   });
 

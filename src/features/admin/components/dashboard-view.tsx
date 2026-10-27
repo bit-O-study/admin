@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { buttonClass } from "@/components/ui/kit";
 import { SERVICES, SERVICE_ORDER, type ServiceKey } from "@/features/admin/services";
 import type { ActionItems } from "@/features/admin/action-items";
 
@@ -47,9 +48,16 @@ export function DashboardView({
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-[28px]">개요</h1>
-        <p className="mt-1 text-[13.5px] text-zinc-500">{today} · 오늘 0시부터</p>
+      <header className="flex flex-wrap items-end gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-[28px]">개요</h1>
+          <p className="mt-1 text-[13.5px] text-zinc-500">{today} · 오늘 0시부터</p>
+        </div>
+        {/* 895c3ea 바로가기(프로젝트 사이트·자료실)를 2.0 버튼 모양으로. */}
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/projects" className={buttonClass("secondary", "sm")}>사이트 열기</Link>
+          <Link href="/admin/library" className={buttonClass("secondary", "sm")}>자료실 · 파일 검수</Link>
+        </div>
       </header>
 
       <section aria-label="오늘 접속" className="grid overflow-hidden rounded-lg border border-line bg-surface sm:grid-cols-2 lg:grid-cols-4">

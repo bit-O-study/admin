@@ -23,6 +23,8 @@ export const NAV_SCOPES: NavScope[] = [
       { href: "/admin", label: "개요" },
       { href: "/admin/activity", label: "활동" },
       { href: "/admin/status", label: "상태" },
+      // 2026-10-27: 운영 사이트 바로가기(895c3ea 프로젝트 사이트).
+      { href: "/admin/projects", label: "사이트" },
       { href: "/admin/admins", label: "관리자" },
     ],
   },
@@ -72,7 +74,16 @@ export const NAV_SCOPES: NavScope[] = [
       },
     ],
   },
-  { key: "memo", label: "메모 moa", href: "/admin/memo", tabs: [{ href: "/admin/memo", label: "개요" }] },
+  {
+    key: "memo",
+    label: "메모 moa",
+    href: "/admin/memo",
+    tabs: [
+      { href: "/admin/memo", label: "개요" },
+      // 메모 moa 프로젝트에서 올린 파일 검수(895c3ea 통합 자료실). 경로는 그대로 /admin/library.
+      { href: "/admin/library", label: "자료실" },
+    ],
+  },
   {
     key: "iq",
     label: "아이큐",

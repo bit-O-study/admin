@@ -1,15 +1,76 @@
-import { ExternalLink, Globe, Server } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+
 import { requireAdmin } from "@/features/admin/admin";
 import { projectSites } from "@/features/admin/project-sites";
+import { judgeProject, LEVEL_DOT } from "@/features/admin/status-model";
 import { agentRequest } from "@/features/server/agent";
 import type { ServerSnapshot } from "@/features/server/types";
+import { PageHeader, buttonClass } from "@/components/ui/kit";
+import { cn } from "@/lib/utils";
+
+/**
+ * 전체 서비스 › 사이트 (895c3ea 프로젝트 사이트, 2026-10-27 BOadmin 2.0 화면 규칙).
+ * 운영 사이트(Vercel)로 바로 가고, 내부 서버 실행 상태를 함께 본다. 서버 직접 접속 주소는
+ * VPN(Tailscale)·같은 네트워크에서만 열리고, 서버에서 실행 중일 때만 보여 준다.
+ */
 export default async function ProjectsPage() {
-  await requireAdmin(); let snapshot: ServerSnapshot | null = null;
-  try { const response = await agentRequest("/status"); if (response.ok) snapshot = await response.json(); } catch {}
-  const stateNames = { running: "서버 실행 중", stopped: "서버 중지됨", unhealthy: "서버 응답 없음", "not-deployed": "서버 배포 전" };
-  return <main className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6 lg:p-8"><header><p className="text-xs font-bold tracking-widest text-indigo-500">PROJECTS</p><h1 className="mt-1 text-2xl font-black">프로젝트 사이트</h1><p className="mt-2 text-sm text-zinc-500">운영 사이트로 바로 이동하거나 내부 서버의 실행 상태를 확인하세요.</p></header><p className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950 dark:text-indigo-200">운영 사이트는 현재 Vercel 주소입니다. 서버에는 고정 도메인이 연결되지 않았으며, 서버 직접 접속은 VPN 또는 같은 네트워크에서만 가능합니다.</p><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{projectSites.map(site=>{
-    const project = snapshot?.projects.find(item=>item.name===site.key);
-    const running = project?.state === "running";
-    return <article key={site.key} className="flex min-w-0 flex-col rounded-2xl border border-zinc-200/70 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"><span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300"><Globe size={20}/></span><h2 className="text-lg font-extrabold">{site.name}</h2><p className="mt-1 text-sm text-zinc-500">{site.description}</p>{site.url ? <><p className="mt-4 break-all text-xs text-zinc-400">{new URL(site.url).hostname}</p><a href={site.url} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white">운영 사이트 열기<ExternalLink size={15}/></a></> : <p className="mt-4 rounded-xl bg-zinc-50 p-3 text-xs text-zinc-500 dark:bg-zinc-800">외부 접속용 고정 도메인 미연결</p>}{site.port && <details className="mt-4 border-t border-zinc-100 pt-3 text-xs dark:border-zinc-800"><summary className="cursor-pointer font-semibold text-zinc-500"><Server size={12} className="mr-1 inline"/>{project ? stateNames[project.state] : "서버 상태 확인 필요"} · 직접 접속</summary><div className="mt-3 flex flex-wrap gap-2">{running ? <><a href={"http://100.97.115.109:"+site.port} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700">VPN 주소 열기 ↗</a><a href={"http://192.168.219.183:"+site.port} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700">내부망 주소 열기 ↗</a></> : <span className="text-zinc-400">서버 실행을 확인한 후 접속할 수 있습니다.</span>}</div></details>}</article>;
-  })}</div></main>;
+  await requireAdmin();
+  let snapshot: ServerSnapshot | null = null;
+  try {
+    const response = await agentRequest("/status");
+    if (response.ok) snapshot = await response.json();
+  } catch {}
+
+  return (
+    <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+      <PageHeader title="사이트" description="운영 사이트로 바로 가거나 내부 서버의 실행 상태를 확인합니다." />
+      <p className="mb-5 rounded-md border border-line bg-surface px-3 py-2 text-[13px] text-zinc-600 dark:text-zinc-300">
+        운영 사이트는 Vercel 주소입니다. 서버에는 고정 도메인이 없어서, 서버 직접 접속은 VPN 또는 같은 네트워크에서만 열립니다.
+        {!snapshot && " 지금은 서버 상태를 불러오지 못했습니다."}
+      </p>
+      <ul className="overflow-hidden rounded-lg border border-line bg-surface">
+        {projectSites.map((site) => {
+          const project = snapshot?.projects.find((p) => p.name === site.key);
+          const judged = project ? judgeProject(project) : null;
+          const running = project?.state === "running";
+          return (
+            <li key={site.key} className="grid gap-3 border-b border-line px-4 py-4 last:border-0 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1.1fr)_minmax(0,1fr)_210px] md:items-center">
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold">{site.name}</p>
+                <p className="text-[12.5px] text-zinc-500">{site.description}</p>
+              </div>
+              <div className="min-w-0 text-[12.5px]">
+                <span className="text-zinc-500">운영 </span>
+                {site.url ? <span className="font-mono">{new URL(site.url).hostname}</span> : <span className="text-zinc-400">고정 도메인 없음</span>}
+              </div>
+              <div className="flex min-w-0 items-center gap-2 text-[12.5px]">
+                {site.port ? (
+                  <>
+                    <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", judged ? LEVEL_DOT[judged.level] : "bg-zinc-300 dark:bg-zinc-700")} />
+                    <span className="truncate">서버 {judged ? judged.detail : "상태 확인 필요"}</span>
+                    <span className="font-mono text-zinc-500">:{site.port}</span>
+                  </>
+                ) : (
+                  <span className="text-zinc-400">서버 없음</span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5 md:justify-end">
+                {site.url && (
+                  <a href={site.url} target="_blank" rel="noopener noreferrer" className={buttonClass("primary", "sm")}>
+                    열기<ExternalLink size={13} aria-hidden="true" />
+                  </a>
+                )}
+                {site.port && running && (
+                  <>
+                    <a href={"http://100.97.115.109:" + site.port} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "sm")}>VPN</a>
+                    <a href={"http://192.168.219.183:" + site.port} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "sm")}>내부망</a>
+                  </>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
 }
