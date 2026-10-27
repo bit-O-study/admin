@@ -69,9 +69,10 @@ export function TerminalConsole() {
         </div>
       </div>
       {error && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{error}</p>}
-      <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+      {/* 폰: 칸 폭을 화면에 묶는다(minmax(0,1fr)) — 기본 auto 칸은 세션 가로 목록 길이만큼 늘어나 터미널이 화면 밖으로 밀렸다. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
         {/* 폰에서는 세션 목록을 가로 한 줄로 — 세로로 쌓이면 터미널이 아래 탭 막대 밑으로 밀렸다. */}
-        <nav aria-label="터미널 세션" className="rounded-lg border border-line bg-surface p-2">
+        <nav aria-label="터미널 세션" className="min-w-0 rounded-lg border border-line bg-surface p-2">
           {sessions.length === 0 && <p className="p-3 text-[13px] text-zinc-500">아직 연 세션이 없습니다.</p>}
           <ul className="flex gap-1 overflow-x-auto lg:block lg:space-y-1">
             {sessions.map((s) => (
@@ -93,7 +94,7 @@ export function TerminalConsole() {
               <div className="flex items-center justify-between border-b border-zinc-800 px-3 py-2 text-[13px] text-zinc-300">
                 <span className="truncate">{TERMINAL_LABEL[current.kind]} · {current.actor} · {stateText(current)}</span>
                 {isLive(current) && (
-                  <button type="button" onClick={() => void close(current)} className="flex items-center gap-1 rounded px-2 py-1 hover:bg-zinc-800" aria-label="세션 닫기">
+                  <button type="button" onClick={() => void close(current)} className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded px-2 py-1 hover:bg-zinc-800" aria-label="세션 닫기">
                     <X className="size-3.5" />닫기
                   </button>
                 )}
