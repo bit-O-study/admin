@@ -12,8 +12,9 @@ const fs = require('node:fs');
 
 const COMMANDS = {
   // CLI 가 끝나면 세션도 끝난다. 셸이 필요하면 'shell' 세션을 연다.
-  claude: { file: 'powershell.exe', args: ['-NoLogo', '-NoProfile', '-Command', 'claude'] },
-  codex: { file: 'powershell.exe', args: ['-NoLogo', '-NoProfile', '-Command', 'codex'] },
+  // npm 전역 설치의 claude.ps1 은 서버 실행 정책에 막힌다 — 정책은 그대로 두고 cmd 로 claude.cmd·codex.cmd 를 부른다.
+  claude: { file: 'cmd.exe', args: ['/d', '/c', 'claude.cmd'] },
+  codex: { file: 'cmd.exe', args: ['/d', '/c', 'codex.cmd'] },
   shell: { file: 'powershell.exe', args: ['-NoLogo'] },
 };
 const FLUSH_MS = 120;
@@ -103,7 +104,9 @@ function createRestStore({ url, key, hostId, fetchImpl = fetch }) {
   async function call(method, pathAndQuery, body, prefer) {
     const res = await fetchImpl(`${base}/${pathAndQuery}`, { method, headers: { ...headers, ...(prefer ? { Prefer: prefer } : {}) }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(8000) });
     if (!res.ok) throw Error(`${method} ${pathAndQuery.split('?')[0]}: ${res.status}`);
-    return res.status === 204 ? null : res.json();
+    // Prefer: return=minimal 은 201 + 빈 본문으로 온다 — 본문이 있을 때만 JSON 으로 읽는다.
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
   }
   const host = encodeURIComponent(hostId);
   return {

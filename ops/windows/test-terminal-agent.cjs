@@ -107,5 +107,12 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     assert.equal(JSON.parse(patch.init.body).state, 'running');
     assert.ok(calls.every((c) => !c.url.includes('kkkk')));
   }
+  // 5) return=minimal 의 201 빈 본문에서 멈추지 않는다(실서버에서 생존 신호 뒤 세션을 못 열던 원인).
+  {
+    const fetchImpl = async () => new Response('', { status: 201 });
+    const store = createRestStore({ url: 'https://x.supabase.co', key: 'k'.repeat(30), hostId: 'primary', fetchImpl });
+    assert.equal(await store.heartbeat({}), null);
+    assert.equal(await store.writeOutput('a', 'x'), null);
+  }
   console.log('terminal-agent tests passed: fixed commands, input/resize/output, kill, unknown kind, restart recovery, idle close, conditional claim');
 })().catch((e) => { console.error(e); process.exitCode = 1; });
