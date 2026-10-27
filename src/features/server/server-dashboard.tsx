@@ -31,10 +31,10 @@ export function ServerDashboard() {
       const requested = requestedControl.current;
       if (requested) {
         const project = (result as ServerSnapshot).projects.find(item => item.name === requested.project);
-        if (project && !project.pending && project.desired === requested.action) {
+        if (project && !project.pending) {
           if (project.controlError) {
             setNotice(project.controlError); requestedControl.current = null;
-          } else if (project.state === (requested.action === 'on' ? 'running' : 'stopped')) {
+          } else if (project.desired === requested.action && project.state === (requested.action === 'on' ? 'running' : 'stopped')) {
             setNotice(`${names[project.name] || project.name} ${requested.action.toUpperCase()} 상태를 확인했습니다.`);
             requestedControl.current = null;
           }
@@ -71,6 +71,7 @@ export function ServerDashboard() {
     </header>
     {error && <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{error}{data && ' 아래는 마지막으로 수신한 상태입니다. 연결이 복구되면 제어할 수 있습니다.'}</div>}
     {notice && <div role="status" className="rounded-xl bg-indigo-50 p-4 text-sm text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">{notice}</div>}
+    {data?.relay?.stale && <div role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">운영 서버 연결이 지연되고 있습니다. 마지막 수신 상태를 표시하며 연결이 복구될 때까지 제어할 수 없습니다.</div>}
     {!data ? <div className={`${panel} p-10 text-center text-sm text-zinc-500`}>{refreshing ? '운영 서버 상태를 확인하고 있습니다…' : '관리 에이전트 연결 후 서버 상태가 표시됩니다.'}</div> : <>
       <div className="grid gap-4 md:grid-cols-3">
         <section className={`${panel} p-5`}><div className="flex items-center gap-2 text-sm font-semibold text-zinc-500"><HardDrive size={17} />서버 메모리</div><div className="mt-4 flex items-baseline gap-2"><strong className="text-3xl tracking-tight">{data.memory.percent}%</strong><span className="text-xs text-zinc-500">사용 중</span></div><div role="progressbar" aria-label="서버 메모리 사용률" aria-valuenow={data.memory.percent} aria-valuemin={0} aria-valuemax={100} className="my-3 h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"><div className={`h-full rounded-full ${data.memory.percent >= 90 ? 'bg-amber-500' : 'bg-indigo-500'}`} style={{ width: `${data.memory.percent}%` }} /></div><p className="text-xs text-zinc-500">{gb(data.memory.used)} / {gb(data.memory.total)} · 여유 {gb(data.memory.free)}</p></section>

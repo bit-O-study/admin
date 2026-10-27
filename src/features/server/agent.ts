@@ -1,6 +1,14 @@
 import 'server-only';
 
 export async function agentRequest(path: '/status' | '/control', body?: unknown): Promise<Response> {
+  if (!process.env.SERVER_CONTROL_TOKEN) {
+    const { relayRequest } = await import('./relay');
+    return relayRequest(path, body);
+  }
+  return localAgentRequest(path, body);
+}
+
+export async function localAgentRequest(path: '/status' | '/control', body?: unknown): Promise<Response> {
   const token = process.env.SERVER_CONTROL_TOKEN;
   if (!token || token.length < 32) throw new Error('서버 관리 연결이 아직 설정되지 않았습니다.');
   const base = new URL(process.env.SERVER_CONTROL_URL || 'http://127.0.0.1:4199');

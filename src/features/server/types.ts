@@ -1,4 +1,5 @@
 export type ServerSnapshot = {
+  relay?: { receivedAt: string; stale: boolean };
   checkedAt: string;
   memory: { total: number; free: number; used: number; percent: number };
   environment: { hostname: string; platform: string; release: string; architecture: string; node: string; cpu: string; cores: number; uptime: number };
