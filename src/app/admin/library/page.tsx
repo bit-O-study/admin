@@ -1,8 +1,9 @@
 import Link from "@/components/PendingLink";
-import { Download, ExternalLink, FolderOpen } from "lucide-react";
+import { Download, FolderOpen } from "lucide-react";
 
 import { requireAdmin } from "@/features/admin/admin";
-import { libraryRequest, memoOrigin, type LibraryData, type ReviewState } from "@/features/library/data";
+import { libraryRequest, type LibraryData, type ReviewState } from "@/features/library/data";
+import { LibraryUpload } from "@/features/library/upload-form";
 import { ReviewForm } from "@/features/library/review-form";
 import { Badge, ChipLink, EmptyState, PageHeader, buttonClass, fieldClass, type Tone } from "@/components/ui/kit";
 import { cn } from "@/lib/utils";
@@ -44,12 +45,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
     <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
       <PageHeader
         title="자료실"
-        description="메모 moa 프로젝트에서 올린 원본 파일을 확인하고 검수 기록을 남깁니다."
-        actions={
-          <a href={memoOrigin + "/files"} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "sm")}>
-            <ExternalLink size={14} aria-hidden="true" />메모 moa 자료실 열기
-          </a>
-        }
+        description="자동 빌드된 앱과 프로젝트 파일을 내려받고 검수 기록을 남깁니다."
       />
       {!data ? (
         <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
@@ -57,6 +53,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
         </p>
       ) : (
         <div className="flex flex-col gap-5">
+          <LibraryUpload projects={data.projects} ready={data.storageReady} />
           <section aria-label="파일 검수 현황" className="grid grid-cols-2 overflow-hidden rounded-lg border border-line bg-surface lg:grid-cols-4">
             {([["total", "전체 파일", ""], ["pending", "확인 대기", "pending"], ["reviewed", "확인 완료", "reviewed"], ["hold", "보류", "hold"]] as const).map(([key, label, st], i) => (
               <Link
@@ -97,7 +94,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 text-[12px] text-zinc-500">
                       <Badge tone={tones[file.status]}>{labels[file.status]}</Badge>
-                      <a href={memoOrigin + "/s/" + file.spaceId + "/files"} target="_blank" rel="noopener noreferrer" className="truncate hover:text-zinc-950 dark:hover:text-zinc-50">{file.projectName} ↗</a>
+                      <span className="truncate">{file.projectName}</span>
                     </div>
                     <h2 className="mt-1.5 break-all text-[15px] font-semibold">{file.name}</h2>
                     <p className="mt-0.5 font-mono text-[12px] text-zinc-500">
