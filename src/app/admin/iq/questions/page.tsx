@@ -14,7 +14,7 @@ export default function IqQuestionsPage() {
         >
           ← 아이큐
         </Link>
-        <h1 className="mt-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">문제 해설</h1>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[28px] dark:text-zinc-50">문제 해설</h1>
         <p className="mt-1 text-sm text-zinc-500">
           전체 문항 · 정답 · 풀이(규칙) 검토
         </p>

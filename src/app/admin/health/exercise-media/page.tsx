@@ -24,7 +24,7 @@ export default async function HealthExerciseMediaPage() {
   return (
     <div>
       <div className="mb-6 space-y-1">
-        <h1 className="text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[28px] dark:text-zinc-50">
           운동 미디어 관리
         </h1>
         <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-400">

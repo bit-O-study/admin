@@ -71,7 +71,7 @@ export default async function GrantsPage({
   return (
     <main className="space-y-6">
       <div>
-        <h1 className="mb-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">요금제 지급</h1>
+        <h1 className="mb-1 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[28px] dark:text-zinc-50">요금제 지급</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           결제·신청 없이 바로 넣어요. 탈퇴 회원과 검증유저는 목록에 나오지 않아요.
         </p>

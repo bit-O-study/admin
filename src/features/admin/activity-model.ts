@@ -88,7 +88,7 @@ export function buildActivity(src: ActivitySources, { now = new Date(), days = 7
     out.push({ id: `apperr:${g.day}`, kind: "app_error", at: g.latest, title: `앱 오류 ${n}건`, detail: [...new Set(g.rows.map((e) => e.kind))].slice(0, 3).join(", "), scope: "health", href: "/admin/health/events?severity=error" });
   }
   for (const d of src.deploys ?? []) {
-    if (inWindow(d.at, from, to)) out.push({ id: `deploy:${d.name}:${d.at}`, kind: d.ok ? "deploy" : "deploy_fail", at: d.at as string, title: `${d.label} ${d.ok ? "서버 배포 완료" : "배포 실패"}`, detail: d.sha ? d.sha.slice(0, 7) : d.state, scope: "server", href: "/admin/server" });
+    if (inWindow(d.at, from, to)) out.push({ id: `deploy:${d.name}:${d.at}`, kind: d.ok ? "deploy" : "deploy_fail", at: d.at as string, title: `${d.label} ${d.ok ? "서버 배포 완료" : "배포 실패"}`, detail: d.sha ? d.sha.slice(0, 7) : d.state, scope: "server", href: "/admin/server/deployments" });
   }
 
   return out.sort((a, b) => b.at.localeCompare(a.at)).slice(0, limit);

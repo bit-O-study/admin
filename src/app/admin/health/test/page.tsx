@@ -13,7 +13,7 @@ export default async function AdminTestPage() {
 
   return (
     <main>
-      <h1 className="mb-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">
+      <h1 className="mb-1 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[28px] dark:text-zinc-50">
         테스트
       </h1>
       <p className="mb-6 text-sm leading-6 text-zinc-600 dark:text-zinc-400">

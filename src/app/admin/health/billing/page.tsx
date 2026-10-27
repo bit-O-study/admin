@@ -24,7 +24,7 @@ export default async function AdminBillingPage() {
 
   return (
     <main>
-      <h1 className="mb-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl dark:text-zinc-50">
+      <h1 className="mb-1 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-[28px] dark:text-zinc-50">
         팀 요금제
       </h1>
       <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">

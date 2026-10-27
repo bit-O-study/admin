@@ -91,7 +91,16 @@ export const NAV_SCOPES: NavScope[] = [
       { href: "/admin/liquor/traffic", label: "유입" },
     ],
   },
-  { key: "server", label: "서버", href: "/admin/server", tabs: [{ href: "/admin/server", label: "프로세스·배포" }] },
+  {
+    key: "server",
+    label: "서버",
+    href: "/admin/server",
+    tabs: [
+      { href: "/admin/server", label: "프로세스" },
+      { href: "/admin/server/deployments", label: "배포" },
+      { href: "/admin/server/environment", label: "환경" },
+    ],
+  },
 ];
 
 /** 탭이 맡는 모든 경로(대표 + 세그먼트). */
