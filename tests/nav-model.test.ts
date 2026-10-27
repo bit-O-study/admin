@@ -94,6 +94,10 @@ describe("메뉴 정의", () => {
     ]) expect(hrefs.has(old)).toBe(true);
   });
 
+  it("서버 › 터미널 탭이 있다", () => {
+    expect(locate("/admin/server/terminal")).toMatchObject({ scope: { key: "server" }, tab: { label: "터미널" } });
+  });
+
   it("검색 목록은 세그먼트를 '서비스 › 탭' 경로와 함께 낸다", () => {
     expect(navEntries()).toContainEqual({ href: "/admin/health/crons", label: "크론", path: "헬쑤 › 운영", scope: "health" });
   });

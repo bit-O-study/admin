@@ -110,6 +110,7 @@ export const NAV_SCOPES: NavScope[] = [
       { href: "/admin/server", label: "프로세스" },
       { href: "/admin/server/deployments", label: "배포" },
       { href: "/admin/server/environment", label: "환경" },
+      { href: "/admin/server/terminal", label: "터미널" },
     ],
   },
 ];
