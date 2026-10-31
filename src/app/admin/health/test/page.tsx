@@ -5,7 +5,7 @@ import { Leaf, Play } from "lucide-react";
 import { isAdminUser } from "@/features/admin/admin";
 
 export const dynamic = "force-dynamic";
-const HEALTH_APP_URL = process.env.HEALTH_APP_URL || "https://health-app-five-iota.vercel.app";
+const HEALTH_APP_URL = process.env.HEALTH_APP_URL || "https://www.helthssu.co.kr";
 
 // 관리자 전용 "테스트" 탭 — 실험/숨은 기능 진입점 모음.
 export default async function AdminTestPage() {

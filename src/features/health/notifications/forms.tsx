@@ -12,7 +12,7 @@ export function NotificationSettings({configured,connection}:{configured:boolean
     {configured?<a href="/api/support/kakao/start" className="inline-block rounded-xl bg-yellow-300 px-4 py-3 font-semibold text-zinc-900">카카오 계정 연결</a>:<p role="status">카카오 REST 키·서버 암호화 키·사이트 URL·서버 관리자 키 설정이 필요해요. 문의 접수는 계속 사용할 수 있어요.</p>}
     <label className="flex gap-2"><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/>카카오 문의 알림 받기</label>
     <label className="flex gap-2"><input type="checkbox" checked={push} onChange={e=>setPush(e.target.checked)}/>등록된 브라우저 기기로 새 문의 푸시 받기</label>
-    <Link className="block text-sm underline" href="https://health-app-five-iota.vercel.app/settings/notifications">기기 푸시 등록·권한 설정</Link>
+    <Link className="block text-sm underline" href="https://www.helthssu.co.kr/settings/notifications">기기 푸시 등록·권한 설정</Link>
     <div className="flex flex-wrap gap-2">{([['save','설정 저장'],['test','테스트 보내기'],['dispatch','대기 알림 처리'],['disconnect','카카오 연결 해제']] as const).map(([kind,label])=><button type="button" className="rounded-xl border px-3 py-3 text-sm" key={kind} disabled={pending||((kind==="test")&&!configured)} onClick={()=>run(kind)}>{label}</button>)}</div>
     <p role="status" className="text-sm">{message}</p>
   </section>;
