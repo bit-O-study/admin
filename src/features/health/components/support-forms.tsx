@@ -55,7 +55,9 @@ export function SupportManageForm({ ticket }: { ticket: SupportTicket }) {
   return (
     <form
       className="space-y-3"
-      action={(form) =>
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
         start(async () => {
           const r = await manageSupportAction(
             ticket.id,
@@ -65,20 +67,21 @@ export function SupportManageForm({ ticket }: { ticket: SupportTicket }) {
           );
           setMessage(r.ok ? "변경했어요." : r.error);
           if (r.ok) router.refresh();
-        })
-      }
+        });
+      }}
     >
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <label>
-          처리 상태
-          <select name="status" defaultValue={ticket.status} className={field}>
-            {Object.entries(SUPPORT_STATUSES).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </label>
+      <fieldset disabled={pending}>
+        <legend className="mb-2 text-sm font-semibold">처리 상태</legend>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(SUPPORT_STATUSES).map(([value, label]) => (
+            <label key={value} className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-zinc-500 has-checked:font-semibold">
+              <input type="radio" name="status" value={value} defaultChecked={ticket.status === value} />
+              {label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className="text-sm">
         <label>
           우선순위
           <select name="priority" defaultValue={ticket.priority} className={field}>

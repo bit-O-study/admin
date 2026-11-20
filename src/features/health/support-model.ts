@@ -5,12 +5,15 @@
 export const SUPPORT_CATEGORIES = {
   bug: "버그 신고",
   feedback: "불편 신고",
-  idea: "기능 제안",
+  idea: "기능 개선 제안",
   other: "기타 문의",
 } as const;
 
 export const SUPPORT_STATUSES = {
   new: "접수",
+  acknowledged: "관리자 확인",
+  development_review: "개발 검토",
+  development_done: "개발 완료",
   in_progress: "확인 중",
   waiting_user: "답변 대기",
   resolved: "해결",

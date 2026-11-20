@@ -73,6 +73,11 @@ describe("검증", () => {
     expect(isSupportManageInput("new", "critical")).toBe(false);
   });
 
+  it.each(["acknowledged", "development_review", "development_done"])("개발 상태 %s를 저장하고 목록에서 찾을 수 있다", (status) => {
+    expect(isSupportManageInput(status, "normal")).toBe(true);
+    expect(parseSupportFilters({ status }).status).toBe(status);
+  });
+
   it("uuid 형식", () => {
     expect(isUuid("c432b98c-51b6-49eb-9172-5b55553f883c")).toBe(true);
     expect(isUuid("../etc")).toBe(false);
