@@ -6,6 +6,7 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const { execFile } = require('node:child_process');
 const { createDeploymentMonitor } = require('./deployment-status.cjs');
+const { videoProgress } = require('./video-progress.cjs');
 
 function read(file) { try { return JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '')); } catch { return null; } }
 function probe(app) {
@@ -59,7 +60,7 @@ function createAgent({ inventory, token, auditPath, deploymentMonitor = createDe
         controlReason: app.name === 'admin' ? '관리 콘솔은 연결 유지를 위해 서버에서 직접 관리합니다.' : !capable ? '제어 가능한 supervisor 연결이 필요합니다.' : !deployed ? '먼저 프로젝트를 배포해 주세요.' : null };
     }));
     const total = os.totalmem(), free = os.freemem();
-    return { checkedAt: new Date().toISOString(), memory: { total, free, used: total - free, percent: Math.round((total - free) / total * 100) },
+    return { checkedAt: new Date().toISOString(), videoProduction: videoProgress(), memory: { total, free, used: total - free, percent: Math.round((total - free) / total * 100) },
       environment: { hostname: os.hostname(), platform: os.platform(), release: os.release(), architecture: os.arch(), node: process.version, cpu: os.cpus()[0]?.model || 'Unknown', cores: os.cpus().length, uptime: Math.floor(os.uptime()) }, projects };
   }
   const server = http.createServer(async (req, res) => {

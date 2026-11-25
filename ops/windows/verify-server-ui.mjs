@@ -23,6 +23,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, colorScheme: 'light' });
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   const snapshot = {
+    videoProduction: { available: true, total: 1351, reviewed: 680, remaining: 671, percent: 50.3, batchCompleted: 176, batchTotal: 847, state: 'running', updatedAt: new Date().toISOString() },
     checkedAt: new Date().toISOString(), memory: { total: 16 * 1024 ** 3, free: 5.2 * 1024 ** 3, used: 10.8 * 1024 ** 3, percent: 68 },
     environment: { hostname: 'BITO-SERVER', platform: 'win32', release: '10.0.26100', architecture: 'x64', node: 'v22.20.0', cpu: 'Intel Core i5', cores: 12, uptime: 345600 },
     projects: ['health_app', 'admin', 'trip', 'whisky_app', 'accountBook', 'MeetingMinutes', 'ticket', 'ast'].map((name, i) => ({ name, port: i === 7 ? 8787 : 4100 + i, sha: 'a'.repeat(40), pid: 2000 + i, state: i === 2 ? 'stopped' : 'running', desired: i === 2 ? 'off' : 'on', pending: false, controlError: null, controllable: name !== 'admin', controlReason: name === 'admin' ? '관리 콘솔은 연결 유지를 위해 서버에서 직접 관리합니다.' : null }))
@@ -42,6 +43,11 @@ try {
   });
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}`);
   await page.getByText('68%', { exact: true }).waitFor();
+  await page.getByText('50.3%', { exact: true }).waitFor();
+  assert.equal(await page.getByRole('progressbar', { name: '전체 운동 영상 제작 완료율' }).getAttribute('aria-valuenow'), '50.3');
+  snapshot.videoProduction.reviewed = 681; snapshot.videoProduction.remaining = 670; snapshot.videoProduction.percent = 50.4; snapshot.videoProduction.batchCompleted = 177;
+  await page.getByRole('button', { name: '새로고침', exact: true }).click();
+  await page.getByText('50.4%', { exact: true }).waitFor();
   await page.getByText('CI/CD 실패', { exact: true }).waitFor();
   await page.getByText('CI/CD 확인 불가', { exact: true }).first().waitFor();
   assert.equal(await page.getByRole('link', { name: '실행 로그' }).getAttribute('href'), 'https://github.com/bit-O-study/health_app/actions/runs/42');

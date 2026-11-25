@@ -26,7 +26,7 @@ jobs:
         run: node scripts/deploy/build-release.cjs
       - name: Verify server management regressions
         run: |
-          node --test ops/windows/test-control-agent.cjs ops/windows/test-deployment-status.cjs
+          node --test ops/windows/test-control-agent.cjs ops/windows/test-deployment-status.cjs ops/windows/test-video-progress.cjs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node ops/windows/test-supervisor.cjs
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

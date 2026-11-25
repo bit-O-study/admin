@@ -9,6 +9,7 @@ New-Item -ItemType Directory -Force -Path $agentRoot | Out-Null
 & icacls $agentRoot /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' | Out-Null
 if ($LASTEXITCODE -ne 0) {throw 'Agent ACL configuration failed'}
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'control-agent.cjs') -Destination $agentRoot
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'video-progress.cjs') -Destination $agentRoot
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'deployment-status.cjs') -Destination $agentRoot
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'control-ast.ps1') -Destination $agentRoot
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'server-inventory.json') -Destination $agentRoot

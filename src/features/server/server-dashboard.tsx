@@ -5,6 +5,7 @@ import { Activity, Cpu, HardDrive, Power, RefreshCw, Server } from 'lucide-react
 import { useConfirm } from '@/components/use-confirm';
 import type { ServerSnapshot } from './types';
 import { DeploymentPanel } from './deployment-panel';
+import { VideoProductionPanel } from './video-production-panel';
 
 const names: Record<string, string> = { health_app: '헬쑤', admin: '관리 콘솔', trip: '여행', whisky_app: '위스키', accountBook: '가계부', MeetingMinutes: '메모 moa', ticket: '티켓', ast: 'AST' };
 const states = { running: '실행 중', stopped: '중지됨', unhealthy: '응답 없음', 'not-deployed': '배포 전' };
@@ -98,6 +99,7 @@ export function ServerDashboard({ view = 'all' }: { view?: ServerView } = {}) {
           </div>
         </article>)}</div>
       </section></>}
+      {show('processes') && <VideoProductionPanel progress={data.videoProduction} stale={Boolean(error || data.relay?.stale)} />}
       {show('deployments') && <DeploymentPanel projects={data.projects} />}
       {show('environment') && <section className={`${panel} p-5`}><h2 className="mb-4 flex items-center gap-2 font-bold"><Cpu size={17} className="text-indigo-500" />서버 환경</h2><dl className="grid gap-5 text-sm sm:grid-cols-2 lg:grid-cols-4">{[['운영체제', `${data.environment.platform} ${data.environment.release}`], ['아키텍처', data.environment.architecture], ['Node.js', data.environment.node], ['CPU', `${data.environment.cpu} (${data.environment.cores} cores)`]].map(([label, value]) => <div key={label}><dt className="text-xs text-zinc-400">{label}</dt><dd className="mt-1 break-words font-medium">{value}</dd></div>)}</dl></section>}
     </>}

@@ -1,4 +1,5 @@
 export type ServerSnapshot = {
+  videoProduction?: { available: false } | { available: true; total: number; reviewed: number; remaining: number; percent: number; batchCompleted: number; batchTotal: number; state: string; updatedAt: string | null };
   relay?: { receivedAt: string; stale: boolean };
   checkedAt: string;
   memory: { total: number; free: number; used: number; percent: number };
