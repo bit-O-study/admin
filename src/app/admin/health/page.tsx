@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { dailyActiveKst } from "@/features/health/dashboard-stats";
+import { isVerificationUser } from "@/features/health/member-filter";
 
 import { PageHeader } from "@/components/ui/kit";
 import { getActiveUsersSeries, getMembers } from "@/features/health/data";
@@ -13,7 +15,8 @@ export const dynamic = "force-dynamic";
  */
 export default async function HealthOverviewPage() {
   const [members, day] = await Promise.all([getMembers(), getActiveUsersSeries("day")]);
-  const lite = members.map((m) => ({ createdAt: m.createdAt, withdrawnAt: m.withdrawnAt }));
+  if (members === null || day === null) return <p role="alert">회원·접속 통계를 불러오지 못했습니다. 다시 시도해 주세요.</p>;
+  const lite = members.filter((m) => !isVerificationUser(m)).map((m) => ({ createdAt: m.createdAt, withdrawnAt: m.withdrawnAt }));
   return (
     <>
       <PageHeader title="개요" description="회원 수·가입·탈퇴·접속 추이" />
@@ -24,7 +27,9 @@ export default async function HealthOverviewPage() {
   );
 }
 
-async function Charts({ members, day }: { members: { createdAt: string; withdrawnAt: string | null }[]; day: Awaited<ReturnType<typeof getActiveUsersSeries>> }) {
+async function Charts({ members, day }: { members: { createdAt: string; withdrawnAt: string | null }[]; day: NonNullable<Awaited<ReturnType<typeof getActiveUsersSeries>>> }) {
   const [month, year] = await Promise.all([getActiveUsersSeries("month"), getActiveUsersSeries("year")]);
-  return <HealthDashboard members={members} active={{ day, month, year }} />;
+  if (month === null || year === null) return <p role="alert">접속 통계를 불러오지 못했습니다. 다시 시도해 주세요.</p>;
+  const todayActive = dailyActiveKst(day, new Date(), 1)[0]?.users ?? 0;
+  return <HealthDashboard members={members} active={{ day, month, year }} todayActive={todayActive} />;
 }

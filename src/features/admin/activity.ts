@@ -43,8 +43,8 @@ export async function getActivity({ days = 7 }: { days?: number } = {}): Promise
     deploys(),
   ]);
   const failed: string[] = [];
-  const pick = <T,>(r: PromiseSettledResult<T>, name: string): T | undefined => {
-    if (r.status === "fulfilled") return r.value;
+  const pick = <T,>(r: PromiseSettledResult<T>, name: string): NonNullable<T> | undefined => {
+    if (r.status === "fulfilled" && r.value != null) return r.value;
     failed.push(name);
     return undefined;
   };

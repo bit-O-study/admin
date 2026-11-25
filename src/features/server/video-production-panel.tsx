@@ -1,6 +1,6 @@
 import type { ServerSnapshot } from './types';
 
-const states: Record<string, string> = { running: '제작 중', 'between-iterations': '다음 운동 준비 중', complete: '제작 완료', blocked: '확인 필요', failed: '작업 오류', stopped: '중지됨', interrupted: '작업 연결 끊김', 'prepared-awaiting-release': '제작 시작 대기', unknown: '작업 상태 확인 불가' };
+const states: Record<string, string> = { running: '제작 중', 'between-iterations': '다음 운동 준비 중', complete: '제작 완료', blocked: '자동 중단 · 원인 점검 필요', failed: '작업 오류', stopped: '중지됨', interrupted: '작업 연결 끊김', 'prepared-awaiting-release': '제작 시작 대기', unknown: '작업 상태 확인 불가' };
 
 export function VideoProductionPanel({ progress, stale }: { progress: ServerSnapshot['videoProduction']; stale: boolean }) {
   return <section className="rounded-lg border border-line bg-surface p-5">
@@ -11,6 +11,7 @@ export function VideoProductionPanel({ progress, stale }: { progress: ServerSnap
       <p className="text-sm">전체 {progress.total.toLocaleString('ko-KR')}종 중 검수 완료 {progress.reviewed.toLocaleString('ko-KR')}종 · 남은 {progress.remaining.toLocaleString('ko-KR')}종</p>
       <p className="mt-2 text-xs text-zinc-500">추가 제작 대상 {progress.batchTotal.toLocaleString('ko-KR')}종 중 {progress.batchCompleted.toLocaleString('ko-KR')}종 완료 · 5초마다 갱신</p>
       <p className="mt-2 text-xs text-zinc-500">운동별 검수 완료 기준입니다. 제작 완료 후 운영 반영은 별도로 진행됩니다.</p>
+      {!stale && progress.state === 'blocked' && <p role="status" className="mt-2 text-sm text-amber-700 dark:text-amber-400">제작이 진행되지 않아 자동 중단됐습니다. 제작 로그를 확인하고 원인을 해결한 뒤 재개해야 합니다.</p>}
       {progress.updatedAt && <p className="mt-2 text-xs text-zinc-400">작업 상태 변경: {new Date(progress.updatedAt).toLocaleString('ko-KR')}</p>}
     </>}
   </section>;

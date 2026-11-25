@@ -1,13 +1,14 @@
 import { LoginForm } from "@/features/auth/login-form";
+import { safeRedirectPath } from "@/lib/redirect";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ denied?: string }>;
+  searchParams: Promise<{ denied?: string; redirect?: string }>;
 }) {
-  const { denied } = await searchParams;
+  const { denied, redirect } = await searchParams;
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
@@ -18,7 +19,7 @@ export default async function LoginPage({
             헬쑤 · 메모 · 아이큐 · 양주 통합 관리 콘솔
           </p>
         </div>
-        <LoginForm denied={denied === "1"} />
+        <LoginForm denied={denied === "1"} redirectTo={safeRedirectPath(redirect)} />
       </div>
     </main>
   );

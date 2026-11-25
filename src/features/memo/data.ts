@@ -1,5 +1,7 @@
 import "server-only";
 
+import { requireAdmin } from "@/features/admin/admin";
+
 /**
  * 메모 앱(moa · MeetingMinutes) 사용 통계.
  *
@@ -32,6 +34,8 @@ export function isMemoConfigured(): boolean {
 
 /** 실패(미설정·네트워크·권한)는 null — 대시보드는 "—" 로 보여 주고 나머지는 그대로 뜬다. */
 export async function getMemoStats(days = 30): Promise<MemoStats | null> {
+  // 메모 앱 통계 토큰으로 서버가 대신 부르는 함수 — 관리자 세션에서만.
+  await requireAdmin();
   if (!isMemoConfigured()) return null;
   const url = new URL("/api/stats", process.env.MEMO_APP_URL);
   url.searchParams.set("days", String(days));

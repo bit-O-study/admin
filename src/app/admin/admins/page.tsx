@@ -1,3 +1,4 @@
+import { getCurrentAdminEmail } from "@/features/admin/admin";
 import { PageHeader } from "@/components/ui/kit";
 import { getAdmins } from "@/features/health/data";
 import { AdminSettingsManager } from "@/features/health/components/admin-settings-manager";
@@ -10,14 +11,14 @@ export const dynamic = "force-dynamic";
  * (계정 저장소는 지금처럼 헬쑤 Supabase 의 admins 테이블.)
  */
 export default async function AdminsPage() {
-  const admins = await getAdmins();
+  const [admins, currentEmail] = await Promise.all([getAdmins(), getCurrentAdminEmail()]);
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
       <PageHeader
         title="관리자"
         description="이 콘솔에 들어올 수 있는 계정입니다. 관리자로 지정된 계정은 헬쑤 앱 대신 이 콘솔로 이동합니다."
       />
-      <AdminSettingsManager admins={admins} />
+      {admins === null ? <p role="alert">관리자 목록을 불러오지 못했습니다. 다시 시도해 주세요.</p> : <AdminSettingsManager admins={admins} currentEmail={currentEmail} />}
     </div>
   );
 }

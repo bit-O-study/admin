@@ -32,9 +32,12 @@ const GRAN_LABEL: Record<Granularity, string> = {
 export function HealthDashboard({
   members,
   active,
+  todayActive,
 }: {
   members: MemberLite[];
   active: ActiveByGran;
+  /** 한국 날짜 기준 오늘 접속(서버가 dailyActiveKst 로 계산 — 빈 날은 0). */
+  todayActive: number;
 }) {
   const [gran, setGran] = useState<Granularity>("month");
 
@@ -50,10 +53,6 @@ export function HealthDashboard({
   );
   const active$ = useMemo(() => activeSeries(active[gran]), [active, gran]);
 
-  const todayActive = active.day.length
-    ? active.day[active.day.length - 1].users
-    : 0;
-
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -64,8 +63,9 @@ export function HealthDashboard({
               key={g}
               type="button"
               onClick={() => setGran(g)}
+              aria-pressed={gran === g}
               className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-semibold transition",
+                "min-h-9 rounded-md px-3 py-1.5 text-sm font-semibold transition",
                 gran === g
                   ? "bg-emerald-600 text-white"
                   : "text-zinc-600 hover:text-emerald-700 dark:text-zinc-300",
@@ -116,7 +116,7 @@ function StatCard({
         {label}
       </p>
       <p className={cn("mt-1 text-2xl font-bold", TONE[tone])}>
-        {value.toLocaleString()}
+        {value.toLocaleString("ko-KR")}
       </p>
     </div>
   );

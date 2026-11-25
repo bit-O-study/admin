@@ -6,7 +6,7 @@ import { signInAction, type SignInState } from "./actions";
 
 const initial: SignInState = { error: null };
 
-export function LoginForm({ denied }: { denied?: boolean }) {
+export function LoginForm({ denied, redirectTo = "/admin" }: { denied?: boolean; redirectTo?: string }) {
   const [state, action, pending] = useActionState(signInAction, initial);
   const error =
     state.error ??
@@ -14,6 +14,8 @@ export function LoginForm({ denied }: { denied?: boolean }) {
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      {/* 로그인 후 돌아갈 화면 — 서버 액션이 /admin 아래 경로인지 다시 검증한다. */}
+      <input type="hidden" name="redirect" value={redirectTo} />
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-semibold text-zinc-700 dark:text-zinc-300">
           이메일
@@ -41,7 +43,7 @@ export function LoginForm({ denied }: { denied?: boolean }) {
       </label>
 
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:bg-red-950/40 dark:text-red-400">
+        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:bg-red-950/40 dark:text-red-400">
           {error}
         </p>
       ) : null}

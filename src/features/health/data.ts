@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -9,28 +11,28 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  */
 export type AdminRow = { email: string; createdAt: string };
 
-/** 전체 관리자 목록. */
-export async function getAdmins(): Promise<AdminRow[]> {
+/** 전체 관리자 목록. 못 읽으면 null(빈 목록과 구분). */
+export async function getAdmins(): Promise<AdminRow[] | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("admins")
     .select("email, created_at")
     .order("created_at", { ascending: true });
-  if (error || !data) return [];
+  if (error || !data) return null;
   return (data as { email: string; created_at: string }[]).map((r) => ({
     email: r.email,
     createdAt: r.created_at,
   }));
 }
 
-/** 게시물 관리자 목록. */
-export async function getPostModerators(): Promise<AdminRow[]> {
+/** 게시물 관리자 목록. 못 읽으면 null. */
+export async function getPostModerators(): Promise<AdminRow[] | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("post_moderators")
     .select("email, created_at")
     .order("created_at", { ascending: true });
-  if (error || !data) return [];
+  if (error || !data) return null;
   return (data as { email: string; created_at: string }[]).map((r) => ({
     email: r.email,
     createdAt: r.created_at,
@@ -53,11 +55,15 @@ export type MemberRow = {
   withdrawnAt: string | null;
 };
 
-/** 전체 회원 목록 — admin_members() RPC (SECURITY DEFINER, is_admin 게이트). */
-export async function getMembers(): Promise<MemberRow[]> {
+/**
+ * 전체 회원 목록 — admin_members() RPC (SECURITY DEFINER, is_admin 게이트).
+ * 못 읽으면 null — 예전엔 [] 로 뭉개 '회원이 없습니다'·'총 회원 0명' 으로 보였다.
+ * 요청 안에서는 한 번만 부른다(cache).
+ */
+export const getMembers = cache(async (): Promise<MemberRow[] | null> => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("admin_members");
-  if (error || !data) return [];
+  if (error || !data) return null;
   return (
     data as {
       user_id: string;
@@ -90,6 +96,12 @@ export async function getMembers(): Promise<MemberRow[]> {
     banReason: r.ban_reason,
     withdrawnAt: r.withdrawn_at,
   }));
+});
+
+/** 회원 1명(서버에서만 — 이메일·휴대폰을 클라이언트 입력으로 받지 않으려고). 못 찾으면 null. */
+export async function getMemberById(userId: string): Promise<MemberRow | null> {
+  const members = await getMembers();
+  return members?.find((m) => m.userId === userId) ?? null;
 }
 
 export type MemberSubscription = {
@@ -125,15 +137,15 @@ export async function getMemberSubscriptions(): Promise<Map<
   );
 }
 
-/** 활동(접속) 유저수 시계열 — admin_active_users(p_gran) RPC. */
+/** 활동(접속) 유저수 시계열 — admin_active_users(p_gran) RPC. 활동이 없는 날은 행이 없다. 실패면 null. */
 export async function getActiveUsersSeries(
   gran: "day" | "month" | "year",
-): Promise<{ bucket: string; users: number }[]> {
+): Promise<{ bucket: string; users: number }[] | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("admin_active_users", {
     p_gran: gran,
   });
-  if (error || !data) return [];
+  if (error || !data) return null;
   return (data as { bucket: string; users: number }[]).map((r) => ({
     bucket: typeof r.bucket === "string" ? r.bucket.slice(0, 10) : r.bucket,
     users: r.users,

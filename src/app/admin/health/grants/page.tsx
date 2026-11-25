@@ -35,6 +35,7 @@ export default async function GrantsPage({
     listTeamGrantCandidates(),
   ]);
   const today = seoulYmd();
+  if (!allMembers) return <p role="alert" className="p-6 text-sm">회원 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>;
   // 탈퇴 회원·검증유저(E2E 임시 계정)는 지급 대상이 아니다.
   const members = allMembers.filter(
     (m) => !m.withdrawnAt && (showVerify || !isVerificationUser(m)),

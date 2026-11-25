@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 
 const rpc = vi.hoisted(() => vi.fn());
 vi.mock("server-only", () => ({}));
+vi.mock("@/features/admin/admin", () => ({ requireAdmin: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/supabase/admin-clients", () => ({ adminDb: () => ({ rpc }) }));
 import { getLiquorVisitSources } from "@/features/liquor/data";
 

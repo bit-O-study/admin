@@ -47,8 +47,11 @@ async function healthChecks(): Promise<StatusItem[]> {
   const items: StatusItem[] = [
     { key: "health-db", label: "헬쑤 데이터 연결", scope: "health", href: "/admin/health", ...judgeLatency(db.ok, db.ms) },
   ];
-  if (actions.ok && actions.value) {
+  if (actions.ok && actions.value && actions.value.appErrors !== null) {
     items.push({ key: "health-app-errors", label: "헬쑤 앱 오류", scope: "health", href: "/admin/health/events", ...judgeAppErrors(actions.value.appErrors, actions.value.appErrorDays) });
+  }
+  if (!actions.ok || !actions.value || actions.value.appErrors === null) {
+    items.push({ key: "health-app-errors", label: "헬쑤 앱 오류", scope: "health", href: "/admin/health/events", level: "unknown", detail: "오류 기록을 불러오지 못함" });
   }
   if (crons.ok && crons.value) {
     for (const s of crons.value.summaries) {

@@ -21,6 +21,7 @@ export default async function LiquorAdminPage() {
         <LiquorManager
           initialRows={initial.rows}
           initialTotal={initial.total}
+          initialError={initial.error}
           pageSize={PAGE_SIZE}
         />
       ) : (

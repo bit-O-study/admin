@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const [members, tickets, reports] = await Promise.allSettled([getMembers(), getSupportTickets({ q }), getReports(200)]);
   return json({
-    members: members.status === "fulfilled" ? searchMembers(q, members.value) : [],
+    members: members.status === "fulfilled" && members.value !== null ? searchMembers(q, members.value) : [],
     tickets:
       tickets.status === "fulfilled"
         ? tickets.value.tickets.slice(0, SEARCH_LIMIT).map((t) => ({
@@ -32,6 +32,6 @@ export async function GET(request: Request) {
           }))
         : [],
     reports: reports.status === "fulfilled" ? searchReports(q, reports.value) : [],
-    failed: [members, tickets, reports].some((r) => r.status === "rejected"),
+    failed: [members, tickets, reports].some((r) => r.status === "rejected" || r.value === null) || (tickets.status === "fulfilled" && Boolean(tickets.value.error)),
   });
 }

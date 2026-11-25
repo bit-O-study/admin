@@ -54,6 +54,7 @@ export default async function HealthMembersPage({
   const q = (sp.q ?? "").slice(0, 100);
   const view = parseMemberView(sp.view);
   const [allMembers, subs] = await Promise.all([getMembers(), getMemberSubscriptions()]);
+  if (!allMembers) return <p role="alert" className="p-6 text-sm">회원 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</p>;
   // 검증유저(E2E 테스트가 만드는 임시 계정)는 기본으로 숨긴다 — 실제 회원 수를 흐린다.
   const verifyCount = allMembers.filter(isVerificationUser).length;
   const base = showVerify ? allMembers : allMembers.filter((m) => !isVerificationUser(m));

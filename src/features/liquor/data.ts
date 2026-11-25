@@ -1,6 +1,7 @@
 import "server-only";
 
 import { adminDb } from "@/lib/supabase/admin-clients";
+import { requireAdmin } from "@/features/admin/admin";
 import { seoulDayStartUtcIso } from "@/lib/date";
 import {
   pickLatestPrice,
@@ -59,60 +60,36 @@ export type LiquorListResult = {
   total: number;
   page: number;
   pageSize: number;
+  /** 조회 실패(빈 결과와 구분). */
+  error: string | null;
 };
 
-/** 등록된 상품(liquor) 총 개수 — 대시보드 지표용. */
-export async function getLiquorCount(): Promise<number> {
-  const db = adminDb("liquor");
-  const { count, error } = await db
-    .from("liquor")
-    .select("id", { count: "exact", head: true });
-  if (error) return 0;
-  return count ?? 0;
-}
-
 /**
- * 전체 상품 상세 조회수 합계(liquor.view_count). 양주는 방문자 추적 테이블이 없어
- * GA 로 트래픽을 보므로, DB 로 볼 수 있는 참여 지표는 상품 조회수 합계다.
- * (view_count 컬럼/마이그레이션 미적용이면 0.)
- */
-export async function getLiquorViewTotal(): Promise<number> {
-  const db = adminDb("liquor");
-  const { data, error } = await db
-    .from("liquor")
-    .select("view_count")
-    .limit(10000);
-  if (error || !data) return 0;
-  return (data as { view_count: number | null }[]).reduce(
-    (sum, r) => sum + (r.view_count ?? 0),
-    0,
-  );
-}
-
-/**
- * 사이트 방문자수(site_visit 행 수 — 세션당 1건). site_visit 테이블 미적용이면 0.
+ * 사이트 방문자수(site_visit 행 수 — 세션당 1건). site_visit 테이블 미적용·조회 실패면 null(화면은 "—").
  * (SQL: whisky_app frontend/supabase/add_site_visit.sql)
  */
-export async function getLiquorVisitTotal(): Promise<number> {
+export async function getLiquorVisitTotal(): Promise<number | null> {
+  await requireAdmin();
   const db = adminDb("liquor");
   const { count, error } = await db
     .from("site_visit")
     .select("id", { count: "exact", head: true });
-  if (error) return 0;
+  if (error) return null;
   return count ?? 0;
 }
 
 /**
  * 오늘(KST) 사이트 방문수 — site_visit.created_at 이 한국 오늘 00:00 이후인 행 수.
- * site_visit 테이블 미적용/오류면 0.
+ * site_visit 테이블 미적용/오류면 null.
  */
-export async function getLiquorVisitToday(now: Date = new Date()): Promise<number> {
+export async function getLiquorVisitToday(now: Date = new Date()): Promise<number | null> {
+  await requireAdmin();
   const db = adminDb("liquor");
   const { count, error } = await db
     .from("site_visit")
     .select("id", { count: "exact", head: true })
     .gte("created_at", seoulDayStartUtcIso(now));
-  if (error) return 0;
+  if (error) return null;
   return count ?? 0;
 }
 
@@ -125,6 +102,7 @@ export async function getLiquorList(opts: {
   page?: number;
   pageSize?: number;
 }): Promise<LiquorListResult> {
+  await requireAdmin();
   const db = adminDb("liquor");
   const pageSize = clamp(opts.pageSize ?? 30, 1, 100);
   const page = Math.max(1, opts.page ?? 1);
@@ -145,7 +123,9 @@ export async function getLiquorList(opts: {
   }
 
   const { data, error, count } = await query;
-  if (error || !data) return { rows: [], total: 0, page, pageSize };
+  if (error || !data) {
+    return { rows: [], total: 0, page, pageSize, error: "상품 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요." };
+  }
 
   const records = data as LiquorRecord[];
   const ids = records.map((r) => r.id);
@@ -174,7 +154,7 @@ export async function getLiquorList(opts: {
     latestPrice: latestByLiquor.get(r.id) ?? null,
   }));
 
-  return { rows, total: count ?? rows.length, page, pageSize };
+  return { rows, total: count ?? rows.length, page, pageSize, error: null };
 }
 
 /** 주어진 liquor id 들에 대한 최신 가격 1건씩. */
@@ -184,6 +164,7 @@ async function getLatestPrices(
   const out = new Map<number, LiquorPrice>();
   if (ids.length === 0) return out;
 
+  await requireAdmin();
   const db = adminDb("liquor");
   const { data } = await db
     .from("liquor_price")
@@ -204,17 +185,21 @@ async function getLatestPrices(
   return out;
 }
 
-/** 특정 상품의 판매처별 가격 이력(crawled_at 내림차순). */
+/**
+ * 특정 상품의 **판매처별 현재가**(liquor_price, crawled_at 내림차순).
+ * 판매처마다 1행이라 "이력"이 아니다 — 화면도 "판매처별 현재가"로 부른다. 실패하면 null.
+ */
 export async function getLiquorPriceHistory(
   liquorId: number,
-): Promise<LiquorPrice[]> {
+): Promise<LiquorPrice[] | null> {
+  await requireAdmin();
   const db = adminDb("liquor");
   const { data, error } = await db
     .from("liquor_price")
     .select("id, liquor_id, source, current_price, original_price, crawled_at")
     .eq("liquor_id", liquorId)
     .order("crawled_at", { ascending: false });
-  if (error || !data) return [];
+  if (error || !data) return null;
   return (data as PriceRecord[]).map(toPrice);
 }
 
@@ -236,6 +221,7 @@ export type LiquorVisitSource = {
  * SQL(whisky_app frontend/supabase/add_site_visit_source.sql)을 아직 안 돌렸으면 null.
  */
 export async function getLiquorVisitSources(days = 30): Promise<LiquorVisitSource[] | null> {
+  await requireAdmin();
   const db = adminDb("liquor");
   const { data, error } = await db.rpc("site_visit_sources", { p_days: days });
   if (error || !data) return null;

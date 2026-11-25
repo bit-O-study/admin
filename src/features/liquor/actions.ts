@@ -1,6 +1,9 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { adminDb } from "@/lib/supabase/admin-clients";
+import { koreanError } from "@/lib/errors";
 import { isAdminUser } from "@/features/admin/admin";
 import {
   getLiquorList,
@@ -61,6 +64,9 @@ function toLiquorRow(p: LiquorPatch): Record<string, unknown> {
   };
 }
 
+/** 이미지 최대 크기 — Vercel 요청 본문 한도(4.5MB)·next.config bodySizeLimit(5MB) 안쪽. */
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+
 /** 이미지 저장 버킷(양주 Supabase). env 로 덮어쓸 수 있음. */
 const IMAGE_BUCKET =
   process.env.LIQUOR_SUPABASE_STORAGE_BUCKET ?? "whisky-images";
@@ -75,10 +81,11 @@ export async function searchLiquorAction(input: {
     return { ok: false, error: "관리자만 접근할 수 있습니다." };
   }
   const data = await getLiquorList(input);
+  if (data.error) return { ok: false, error: data.error };
   return { ok: true, data };
 }
 
-/** 특정 상품의 가격 이력 조회(행 펼칠 때). */
+/** 특정 상품의 판매처별 현재가 조회(행 펼칠 때). */
 export async function priceHistoryAction(
   liquorId: number,
 ): Promise<ActionResult<LiquorPrice[]>> {
@@ -89,6 +96,7 @@ export async function priceHistoryAction(
     return { ok: false, error: "잘못된 상품 ID 입니다." };
   }
   const data = await getLiquorPriceHistory(liquorId);
+  if (!data) return { ok: false, error: "판매처별 가격을 불러오지 못했어요." };
   return { ok: true, data };
 }
 
@@ -112,7 +120,7 @@ export async function updateLiquorAction(
     .from("liquor")
     .update(toLiquorRow(validated.patch))
     .eq("id", id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: koreanError(error) };
   return { ok: true };
 }
 
@@ -132,7 +140,7 @@ export async function insertLiquorAction(
     .insert(toLiquorRow(validated.patch))
     .select("id")
     .single();
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: koreanError(error) };
   return { ok: true, data: { id: (data as { id: number }).id } };
 }
 
@@ -153,16 +161,17 @@ export async function uploadLiquorImageAction(
   if (!file.type.startsWith("image/")) {
     return { ok: false, error: "이미지 파일만 업로드할 수 있습니다." };
   }
-  if (file.size > 5 * 1024 * 1024) {
-    return { ok: false, error: "이미지는 5MB 이하만 가능합니다." };
+  if (file.size > MAX_IMAGE_BYTES) {
+    return { ok: false, error: "이미지는 4MB 이하만 가능합니다." };
   }
 
   const ext = (file.name.split(".").pop() ?? "jpg")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
     .slice(0, 5) || "jpg";
-  // 파일명은 서버에서 생성(사용자 입력 미신뢰). 시간 대신 크기+타입 기반 안정 키.
-  const path = `manual/${file.size}-${file.type.replace(/[^a-z0-9]/gi, "")}.${ext}`;
+  // 파일명은 서버에서 생성(사용자 입력 미신뢰). 예전엔 크기+타입으로 만들어 크기가 같은 다른 사진이
+  // 서로 덮어썼다 — 매번 고유 UUID 경로로 올리고 덮어쓰기(upsert)는 끈다.
+  const path = `manual/${randomUUID()}.${ext}`;
 
   const db = adminDb("liquor");
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -170,9 +179,9 @@ export async function uploadLiquorImageAction(
     .from(IMAGE_BUCKET)
     .upload(path, bytes, {
       contentType: file.type,
-      upsert: true,
+      upsert: false,
     });
-  if (upErr) return { ok: false, error: upErr.message };
+  if (upErr) return { ok: false, error: koreanError(upErr, "이미지를 올리지 못했어요.") };
 
   const { data } = db.storage.from(IMAGE_BUCKET).getPublicUrl(path);
   return { ok: true, data: { url: data.publicUrl } };
@@ -188,7 +197,7 @@ export async function deleteLiquorAction(id: number): Promise<ActionResult> {
   }
   const db = adminDb("liquor");
   const { error } = await db.from("liquor").delete().eq("id", id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: koreanError(error) };
   return { ok: true };
 }
 
@@ -231,7 +240,7 @@ export async function addLiquorPriceAction(
     .eq("source", source)
     .limit(1)
     .maybeSingle();
-  if (selErr) return { ok: false, error: selErr.message };
+  if (selErr) return { ok: false, error: koreanError(selErr) };
 
   if (existing) {
     const { error } = await db
@@ -242,10 +251,10 @@ export async function addLiquorPriceAction(
         crawled_at: crawledAt,
       })
       .eq("id", (existing as { id: number }).id);
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: koreanError(error) };
   } else {
     const { error } = await db.from("liquor_price").insert(priceRow);
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: koreanError(error) };
   }
 
   // 2) liquor_price_history append (항상)
@@ -255,7 +264,7 @@ export async function addLiquorPriceAction(
   if (histErr) {
     return {
       ok: false,
-      error: `가격은 저장됐지만 이력 적재에 실패했습니다: ${histErr.message}`,
+      error: `가격은 저장됐지만 이력 적재에 실패했습니다: ${koreanError(histErr)}`,
     };
   }
 
@@ -295,6 +304,6 @@ export async function deleteLiquorPriceAction(
   }
   const db = adminDb("liquor");
   const { error } = await db.from("liquor_price").delete().eq("id", priceId);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: koreanError(error) };
   return { ok: true };
 }

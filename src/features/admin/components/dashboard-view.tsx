@@ -75,9 +75,9 @@ export function DashboardView({
             href={t.href}
             className={cn("group flex items-center gap-2.5 px-4 py-3 hover:bg-zinc-50 dark:hover:bg-zinc-900", i % 2 === 0 && "border-r border-line", i < 2 && "border-b border-line lg:border-b-0", i === 1 && "lg:border-r")}
           >
-            <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", t.n > 0 ? "bg-red-500" : "bg-zinc-300 dark:bg-zinc-700")} />
+            <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", (t.n ?? 0) > 0 ? "bg-red-500" : "bg-zinc-300 dark:bg-zinc-700")} />
             <span className="min-w-0 flex-1 truncate text-[13px] text-zinc-500">{t.label}</span>
-            <span className={cn("text-[15px] font-semibold tabular-nums", t.n === 0 && "text-zinc-400")}>{t.n.toLocaleString("ko-KR")}</span>
+            <span className={cn("text-[15px] font-semibold tabular-nums", t.n === 0 && "text-zinc-400")}>{t.n === null ? "확인 불가" : t.n.toLocaleString("ko-KR")}</span>
             <ArrowRight size={14} className="text-zinc-300 transition group-hover:text-zinc-500 dark:text-zinc-700" aria-hidden="true" />
           </Link>
         ))}

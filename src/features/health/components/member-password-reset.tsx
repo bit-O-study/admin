@@ -28,7 +28,7 @@ export function MemberPasswordReset({
     setTemp(null);
     setNote(null);
     start(async () => {
-      const res = await resetMemberPasswordAction(userId, email);
+      const res = await resetMemberPasswordAction(userId);
       if (res.ok) {
         setTemp(res.tempPassword);
         setEmailed(res.emailed);

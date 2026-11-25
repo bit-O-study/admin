@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/features/admin/admin", () => ({ requireAdmin: vi.fn().mockResolvedValue(undefined) }));
 import { getMemoStats, isMemoConfigured } from "@/features/memo/data";
 
 const fetchMock = vi.fn();

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatKst } from "@/lib/date";
 import { useConfirm } from "@/components/use-confirm";
 import {
   addLiquorPriceAction,
@@ -33,19 +34,24 @@ import {
   type LiquorRow,
 } from "@/features/liquor/liquor";
 
+/** 서버(uploadLiquorImageAction)와 같은 한도(4MB). 큰 파일은 올리기 전에 막는다. */
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+
 type Props = {
   initialRows: LiquorRow[];
   initialTotal: number;
+  /** 첫 조회 실패 문구(빈 목록과 구분). */
+  initialError?: string | null;
   pageSize: number;
 };
 
-export function LiquorManager({ initialRows, initialTotal, pageSize }: Props) {
+export function LiquorManager({ initialRows, initialTotal, initialError = null, pageSize }: Props) {
   const [rows, setRows] = useState<LiquorRow[]>(initialRows);
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
   const [editing, setEditing] = useState<LiquorRow | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -148,7 +154,7 @@ export function LiquorManager({ initialRows, initialTotal, pageSize }: Props) {
                   colSpan={7}
                   className="px-3 py-10 text-center text-sm text-zinc-500"
                 >
-                  {pending ? "불러오는 중…" : "표시할 상품이 없습니다."}
+                  {pending ? "불러오는 중…" : error ? "목록을 불러오지 못했어요." : "표시할 상품이 없습니다."}
                 </td>
               </tr>
             ) : (
@@ -261,6 +267,8 @@ function LiquorRowView({
       const res = await deleteLiquorPriceAction(priceId);
       if (res.ok) {
         setHistory((prev) => (prev ? prev.filter((p) => p.id !== priceId) : prev));
+        // 목록의 '최신가' 칸도 다시 읽는다(예전엔 삭제한 가격이 그대로 남아 보였다).
+        onPriceChanged();
       } else {
         setRowError(res.error);
       }
@@ -275,7 +283,8 @@ function LiquorRowView({
           <button
             type="button"
             onClick={toggle}
-            aria-label="가격 이력 펼치기"
+            aria-label={expanded ? "판매처별 가격 접기" : "판매처별 가격 펼치기"}
+            aria-expanded={expanded}
             className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
           >
             {expanded ? (
@@ -331,7 +340,7 @@ function LiquorRowView({
           )}
         </td>
         <td className="px-3 py-3 text-xs text-zinc-400">
-          {new Date(row.updatedAt).toLocaleDateString("ko-KR")}
+          {formatKst(row.updatedAt, "date")}
         </td>
         <td className="px-3 py-3">
           <div className="flex items-center justify-end gap-1">
@@ -365,7 +374,7 @@ function LiquorRowView({
             )}
 
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-xs font-semibold text-zinc-500">가격 이력</p>
+              <p className="text-xs font-semibold text-zinc-500">판매처별 현재가</p>
               <button
                 type="button"
                 onClick={() => setShowPriceForm((s) => !s)}
@@ -389,7 +398,7 @@ function LiquorRowView({
             {history === null ? (
               <p className="text-xs text-zinc-400">불러오는 중…</p>
             ) : history.length === 0 ? (
-              <p className="text-xs text-zinc-400">가격 이력이 없습니다.</p>
+              <p className="text-xs text-zinc-400">입력된 판매처 가격이 없습니다.</p>
             ) : (
               <ul className="space-y-1">
                 {history.map((p) => {
@@ -416,7 +425,7 @@ function LiquorRowView({
                         </span>
                       )}
                       <span className="ml-auto text-[11px] text-zinc-400">
-                        {new Date(p.crawledAt).toLocaleString("ko-KR")}
+                        {formatKst(p.crawledAt)}
                       </span>
                       <button
                         type="button"
@@ -600,16 +609,30 @@ function EditModal({
     e.target.value = "";
     if (!file) return;
     setError(null);
-    setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await uploadLiquorImageAction(fd);
-    setUploading(false);
-    if (!res.ok) {
-      setError(res.error);
+    if (!file.type.startsWith("image/")) {
+      setError("이미지 파일만 업로드할 수 있습니다.");
       return;
     }
-    set("imageUrl", res.data.url);
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError("이미지는 4MB 이하만 가능합니다.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await uploadLiquorImageAction(fd);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      set("imageUrl", res.data.url);
+    } catch {
+      // 네트워크 끊김·요청 크기 초과 등 — 예전엔 여기서 멈춰 '업로드…' 가 계속 떠 있었다.
+      setError("이미지를 올리지 못했어요. 파일 크기와 인터넷 연결을 확인해 주세요.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (

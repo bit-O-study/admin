@@ -1,4 +1,5 @@
 import { PageHeader, ButtonLink } from "@/components/ui/kit";
+import { formatKst } from "@/lib/date";
 import { ServiceIcon } from "@/features/admin/components/service-icon";
 import {
   getIqGradeDistribution,
@@ -105,7 +106,7 @@ export default async function IqAdminPage() {
                       {r.grade ?? "-"}
                     </td>
                     <td className="px-3 py-2 text-xs text-zinc-400">
-                      {new Date(r.createdAt).toLocaleString("ko-KR")}
+                      {formatKst(r.createdAt)}
                     </td>
                   </tr>
                 ))}

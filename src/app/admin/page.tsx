@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { isSiteConfigured } from "@/lib/supabase/admin-clients";
 import { getActiveUsersSeries, getMembers } from "@/features/health/data";
+import { dailyActiveKst, memberTotals } from "@/features/health/dashboard-stats";
 import { getIqStats } from "@/features/iq/data";
 import {
   getLiquorVisitToday,
@@ -24,6 +25,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function AdminDashboardPage() {
   const liquorOn = isSiteConfigured("liquor");
+  const now = new Date();
 
   const [actions, members, day, iq, liquorToday, liquorTotal] = await Promise.all([
     getActionItems(),
@@ -34,33 +36,37 @@ export default async function AdminDashboardPage() {
     liquorOn ? getLiquorVisitTotal() : Promise.resolve(null),
   ]);
 
-  const lite = members.map((m) => ({ createdAt: m.createdAt, withdrawnAt: m.withdrawnAt }));
-  // 헬쑤 = 로그인 기반이라 '방문 ≈ 접속' — admin_active_users 일별 값.
-  const healthDays = day.slice(-30).map((d) => d.users);
-
+  // 차트로는 가입·탈퇴 시각만 넘긴다(이름·이메일·전화는 클라이언트로 보내지 않음).
+  // 검증유저(E2E 임시 계정)는 회원 화면과 같은 기준으로 뺀다.
+  const totals = members ? memberTotals(members) : null;
+  // 헬쑤 = 로그인 기반이라 '방문 ≈ 접속' — admin_active_users 일별 값을 한국 날짜 30일로 맞춘다(빈 날 0).
+  // 예전엔 마지막 행을 '오늘' 로 써서 오늘 접속이 0명이면 어제 값이 오늘로 보였다.
+  const healthDaily = day ? dailyActiveKst(day, now, 30) : null;
+  const healthDays = healthDaily?.map((d) => d.users) ?? [];
 
   const kpis: Record<ServiceKey, ServiceKpi> = {
     health: {
       label: "로그인 접속",
-      today: healthDays.length ? healthDays[healthDays.length - 1] : 0,
-      yesterday: healthDays.length > 1 ? healthDays[healthDays.length - 2] : null,
+      today: healthDaily ? healthDays[healthDays.length - 1] : null,
+      yesterday: healthDaily ? healthDays[healthDays.length - 2] : null,
       spark: healthDays,
       href: "/admin/health",
-      extra: [{ label: "총 회원", value: `${lite.filter((m) => !m.withdrawnAt).length.toLocaleString("ko-KR")}명` }],
+      note: healthDaily ? undefined : "불러오지 못함",
+      extra: [{ label: "총 회원", value: totals ? `${totals.active.toLocaleString("ko-KR")}명` : "—" }],
     },
     memo: { label: "로그인 접속", today: null, href: "/admin/memo", note: "불러오는 중…" },
     iq: {
       label: "방문",
       today: iq ? iq.todayVisits : null,
       href: "/admin/iq",
-      note: iq ? undefined : "데이터 없음",
+      note: iq ? undefined : "불러오지 못함",
       extra: iq ? [{ label: "총 응시", value: iq.totalTests.toLocaleString("ko-KR") }] : undefined,
     },
     liquor: {
       label: "방문",
       today: liquorToday,
       href: "/admin/liquor",
-      note: liquorOn ? undefined : "미설정",
+      note: !liquorOn ? "미설정" : liquorToday === null ? "불러오지 못함" : undefined,
       extra: liquorTotal !== null ? [{ label: "누적", value: liquorTotal.toLocaleString("ko-KR") }] : undefined,
     },
   };

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useConfirm } from "@/components/use-confirm";
+
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import {
@@ -10,6 +10,8 @@ import {
   removePostModeratorAction,
 } from "@/features/health/actions";
 import type { AdminRow } from "@/features/health/data";
+import { formatKst } from "@/lib/date";
+import { useConfirm } from "@/components/use-confirm";
 
 export function PostModeratorsManager({
   moderators,
@@ -20,6 +22,7 @@ export function PostModeratorsManager({
   const [email, setEmail] = useState("");
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
 
   function add() {
     setError(null);
@@ -100,7 +103,7 @@ export function PostModeratorsManager({
                   {a.email}
                 </p>
                 <p className="text-xs text-zinc-500">
-                  지정일 {a.createdAt.slice(0, 10)}
+                  지정일 {formatKst(a.createdAt, "date")}
                 </p>
               </div>
               <button

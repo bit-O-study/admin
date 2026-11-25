@@ -3,6 +3,9 @@
  * 회원수/가입수/탈퇴수는 회원 목록(createdAt/withdrawnAt)에서 버킷팅으로 만들고,
  * 접속유저수는 DB 집계(admin_active_users RPC)를 그대로 쓴다. (헬스앱에서 이식)
  */
+import { kstRecentDayKeys } from "@/lib/date";
+import { isVerificationUser } from "@/features/health/member-filter";
+
 export type Granularity = "day" | "month" | "year";
 
 export type SeriesPoint = { bucket: string; value: number };
@@ -107,4 +110,35 @@ export function dashboardSummary(members: MemberLite[]): {
     totalWithdrawals,
     totalMembers: totalSignups - totalWithdrawals,
   };
+}
+/**
+ * 일별 접속 행(활동 없는 날은 행이 없음) → 한국 날짜 기준 최근 days 일, 빈 날 0.
+ * 예전엔 '마지막 행' 을 오늘로 썼다 — 오늘 0명이면 어제(또는 그 전) 값이 '오늘' 로 보였다.
+ */
+export function dailyActiveKst(
+  rows: { bucket: string; users: number }[],
+  now: Date,
+  days = 30,
+): { bucket: string; users: number }[] {
+  const byDay = new Map<string, number>();
+  for (const r of rows) byDay.set(String(r.bucket).slice(0, 10), Number(r.users) || 0);
+  return kstRecentDayKeys(now, days).map((bucket) => ({ bucket, users: byDay.get(bucket) ?? 0 }));
+}
+
+/**
+ * 화면마다 같은 '회원 수' — 검증유저(E2E 임시 계정)는 빼고, 탈퇴는 따로 센다.
+ * 대시보드 카드·헬쑤 통계·회원 화면 머리말이 모두 이 값을 쓴다.
+ */
+export function memberTotals(
+  members: { email: string | null; name: string | null; withdrawnAt: string | null }[],
+): { active: number; withdrawn: number; verification: number } {
+  let active = 0;
+  let withdrawn = 0;
+  let verification = 0;
+  for (const m of members) {
+    if (isVerificationUser(m)) verification++;
+    else if (m.withdrawnAt) withdrawn++;
+    else active++;
+  }
+  return { active, withdrawn, verification };
 }

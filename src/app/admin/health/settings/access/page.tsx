@@ -18,7 +18,7 @@ export default async function AccessSettingsPage() {
       <PageHeader title="권한" description="게시물 관리자와 디버그 계정, 디버그 기능을 누구에게 보여 줄지 정합니다." />
       <div className="flex flex-col gap-10">
         <SettingsSection title="게시물 관리자" description="지정한 계정은 커뮤니티의 모든 게시물·댓글을 삭제하거나 수정할 수 있습니다. 관리자 계정은 기본으로 가능합니다.">
-          <PostModeratorsManager moderators={moderators} />
+          {moderators === null ? <p role="alert">게시물 관리자 목록을 불러오지 못했습니다. 다시 시도해 주세요.</p> : <PostModeratorsManager moderators={moderators} />}
         </SettingsSection>
         <SettingsSection title="디버그 계정" description="지정한 계정은 관리자가 아니어도 켜진 디버그 기능을 앱에서 볼 수 있습니다. 테스트폰 계정을 지정할 때 씁니다.">
           <DebugAccountsManager accounts={debugAccounts} />
